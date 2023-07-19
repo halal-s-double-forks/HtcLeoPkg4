@@ -90,8 +90,8 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   prepareConsole(SystemTable->ConOut, &initialMode);
 
   // Print menu title
-  gST->ConOut->SetAttribute(gST->ConOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLUE));
-  setCursorPos(25, 1);
+  gST->ConOut->SetAttribute(gST->ConOut, EFI_TEXT_ATTR(EFI_GREEN, EFI_BLUE));
+  setCursorPos(15, 1);
   Print(L" HtcLeoRevivalProject EDK2 Main Menu ");
 
   // Print menu options
@@ -102,9 +102,9 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   while (TRUE) {
     UINTN i;
     for (i = 0; i < menuOptionCount; i++) {
-      setCursorPos(30, 3 + i);
+      setCursorPos(25, 3 + i);
       if (i == selectedIndex) {
-        consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_RED));
+        consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_LIGHTGREEN, EFI_BLACK));
       }
       else {
         consoleOut->SetAttribute(
@@ -237,7 +237,6 @@ void option3Function(
 void startTetris(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
-  DEBUG((EFI_D_ERROR, "You selected Option 4\n"));
 
   // D7A59C0A-899E-4E31-A1C3-3D551D7A5381
   EFI_GUID YourAppGuid = {
