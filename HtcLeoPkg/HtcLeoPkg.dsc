@@ -268,6 +268,7 @@
   EmbeddedPkg/Application/AndroidFastboot/AndroidFastbootApp.inf
 
     HtcLeoPkg/Application/TetrisApp/tetris.inf
+    HtcLeoPkg/Application/HtcLeoMenuApp/HtcLeoMenuApp.inf
 
 
   #
