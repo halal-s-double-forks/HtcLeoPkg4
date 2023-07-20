@@ -17,19 +17,8 @@ typedef struct {
 
 void option1Function(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void option2Function(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void option3Function(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void exitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void startTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-
-MenuEntry menuOptions[] = {
-    {1, L"Option 1", &option1Function},
-    {2, L"Option 2", &option2Function},
-    {3, L"Option 3", &option3Function},
-    {4, L"Play Tetris", &startTetris}};
-
-UINTN menuOptionCount = sizeof(menuOptions) / sizeof(menuOptions[0]);
-
-UINTN selectedIndex = 0;
-
 void prepareConsole(
     IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
     OUT EFI_SIMPLE_TEXT_OUTPUT_MODE    *modeToStore);
@@ -42,6 +31,19 @@ void HandleKeyInput(
 EFI_STATUS StartAnotherApp(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable,
     IN EFI_GUID *AppGuid);
+
+MenuEntry menuOptions[] = {
+    {1, L"Option 1", &option1Function},
+    {2, L"Option 2", &option2Function},
+    {3, L"Play Tetris", &startTetris},
+    {4, L"Exit", &exitMenu}
+    };
+
+UINTN menuOptionCount = sizeof(menuOptions) / sizeof(menuOptions[0]);
+
+UINTN selectedIndex = 0;
+
+
 
 
 void prepareConsole(
@@ -110,7 +112,7 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
         consoleOut->SetAttribute(
             consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
       }
-      Print(L" %s ", menuOptions[i].name);
+      Print(L"%d. %s ", menuOptions[i].index, menuOptions[i].name);
     }
 
     HandleKeyInput(ImageHandle, SystemTable);
@@ -188,7 +190,6 @@ EFI_STATUS StartAnotherApp(
 
   // Get the LoadedImage protocol of the current application
   DEBUG((EFI_D_ERROR, "Assigning loaded image protocol guid\n"));
-  DEBUG((EFI_D_ERROR, "AppGuid: %g\n", AppGuid));
   mdelay(3000);
   Status = gBS->HandleProtocol(
       ImageHandle, &gEfiLoadedImageProtocolGuid, (VOID **)&LoadedImage);
@@ -228,25 +229,23 @@ void option2Function(
   DEBUG((EFI_D_ERROR, "You selected Option 2\n"));
 }
 
-void option3Function(
+void exitMenu(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
-  DEBUG((EFI_D_ERROR, "You selected Option 3\n"));
+   SystemTable->BootServices->Exit(ImageHandle, EFI_SUCCESS, 0, NULL);
 }
 
 void startTetris(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
 
-  // D7A59C0A-899E-4E31-A1C3-3D551D7A5381
-  EFI_GUID YourAppGuid = {
+  EFI_GUID TetrisAppGuid = {
       0xD7A59C0A,
       0x899E,
       0x4E31,
       {0xA1, 0xC3, 0x3D, 0x55, 0x1D, 0x7A, 0x53, 0x81}};
 
   // ...
-  DEBUG((EFI_D_ERROR, "AppGuid: %g\n", &YourAppGuid));
   mdelay(1000);
-  EFI_STATUS Status = StartAnotherApp(ImageHandle, SystemTable, &YourAppGuid);
+  EFI_STATUS Status = StartAnotherApp(ImageHandle, SystemTable, &TetrisAppGuid);
 }
