@@ -15,6 +15,18 @@ typedef struct {
   void (*function)();
 } MenuEntry;
 
+
+MenuEntry menuOptions[] = {
+    {1, L"Option 1", &option1Function},
+    {2, L"Option 2", &option2Function},
+    {3, L"Play Tetris", &startTetris},
+    {4, L"Exit", &exitMenu}};
+
+UINTN menuOptionCount = sizeof(menuOptions) / sizeof(menuOptions[0]);
+
+UINTN selectedIndex = 0;
+
+
 void option1Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void option2Function(
@@ -34,15 +46,6 @@ EFI_STATUS StartAnotherApp(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable,
     IN EFI_GUID *AppGuid);
 
-MenuEntry menuOptions[] = {
-    {1, L"Option 1", &option1Function},
-    {2, L"Option 2", &option2Function},
-    {3, L"Play Tetris", &startTetris},
-    {4, L"Exit", &exitMenu}};
-
-UINTN menuOptionCount = sizeof(menuOptions) / sizeof(menuOptions[0]);
-
-UINTN selectedIndex = 0;
 
 void prepareConsole(
     IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,

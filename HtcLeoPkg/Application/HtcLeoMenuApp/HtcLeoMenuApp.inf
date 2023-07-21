@@ -12,6 +12,7 @@
 [Sources]
   menu.c
   CommonHeader.c
+  sdtools.c
 
 [Packages]
   MdePkg/MdePkg.dec
