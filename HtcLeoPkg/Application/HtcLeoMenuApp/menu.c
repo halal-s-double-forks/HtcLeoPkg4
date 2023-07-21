@@ -15,8 +15,10 @@ typedef struct {
   void (*function)();
 } MenuEntry;
 
-void option1Function(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void option2Function(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void option1Function(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void option2Function(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void exitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void startTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void prepareConsole(
@@ -36,15 +38,11 @@ MenuEntry menuOptions[] = {
     {1, L"Option 1", &option1Function},
     {2, L"Option 2", &option2Function},
     {3, L"Play Tetris", &startTetris},
-    {4, L"Exit", &exitMenu}
-    };
+    {4, L"Exit", &exitMenu}};
 
 UINTN menuOptionCount = sizeof(menuOptions) / sizeof(menuOptions[0]);
 
 UINTN selectedIndex = 0;
-
-
-
 
 void prepareConsole(
     IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
@@ -83,7 +81,6 @@ void restoreInitialConsoleMode(
   ASSERT_EFI_ERROR(status);
 }
 
-
 EFI_STATUS EFIAPI
 ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -92,7 +89,7 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   prepareConsole(SystemTable->ConOut, &initialMode);
 
   // Print menu title
-  gST->ConOut->SetAttribute(gST->ConOut, EFI_TEXT_ATTR(EFI_GREEN, EFI_BLUE));
+  gST->ConOut->SetAttribute(gST->ConOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_RED));
   setCursorPos(15, 1);
   Print(L" HtcLeoRevivalProject EDK2 Main Menu ");
 
@@ -106,7 +103,8 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     for (i = 0; i < menuOptionCount; i++) {
       setCursorPos(25, 3 + i);
       if (i == selectedIndex) {
-        consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_LIGHTGREEN, EFI_BLACK));
+        consoleOut->SetAttribute(
+            consoleOut, EFI_TEXT_ATTR(EFI_YELLOW, EFI_BLACK));
       }
       else {
         consoleOut->SetAttribute(
@@ -124,8 +122,6 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   return EFI_SUCCESS;
 }
 
-
-
 void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
   EFI_INPUT_KEY key;
@@ -137,13 +133,8 @@ void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     ASSERT_EFI_ERROR(status);
 
     switch (key.ScanCode) {
-    case CHAR_BACKSPACE:
-      break;
     case SCAN_HOME:
       // home button
-      break;
-    case CHAR_TAB:
-      // windows button
       break;
     case SCAN_UP:
       // volume up button
@@ -166,10 +157,25 @@ void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     case SCAN_ESC:
       // power button
       break;
-    case CHAR_CARRIAGE_RETURN:
-      // dial button
-      if (menuOptions[selectedIndex].function != NULL) {
-        menuOptions[selectedIndex].function(ImageHandle, SystemTable);
+
+    default:
+      switch (key.UnicodeChar) {
+      case CHAR_CARRIAGE_RETURN:
+        // dial button
+        if (menuOptions[selectedIndex].function != NULL) {
+          menuOptions[selectedIndex].function(ImageHandle, SystemTable);
+        }
+        break;
+
+      case CHAR_TAB:
+        // windows button
+        break;
+
+      case CHAR_BACKSPACE:
+        // back button
+        break;
+      default:
+        break;
       }
       break;
     }
@@ -229,14 +235,14 @@ void option2Function(
   DEBUG((EFI_D_ERROR, "You selected Option 2\n"));
 }
 
-void exitMenu(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+void exitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
-   SystemTable->BootServices->Exit(ImageHandle, EFI_SUCCESS, 0, NULL);
+  EFI_STATUS status = SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
+  ASSERT_EFI_ERROR(status);
+  SystemTable->BootServices->Exit(ImageHandle, EFI_SUCCESS, 0, NULL);
 }
 
-void startTetris(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+void startTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
 
   EFI_GUID TetrisAppGuid = {
