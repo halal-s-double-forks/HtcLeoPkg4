@@ -80,14 +80,14 @@
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
   # Little kernel libraries
-  AdmLib|HtcLeoPkg/Library/AdmLib/AdmLib.inf
+  AdmLib|HtcLeoPkg/GPLLibrary/AdmLib/AdmLib.inf
   MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
   MsmPcomClientLib|HtcLeoPkg/Library/MsmPcomClientLib/MsmPcomClientLib.inf
+  HtcLeoVibrationLib|HtcLeoPkg/GPLLibrary/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
 
   # SoC Drivers libraries
-  MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
+  MsmTargetClockLib|HtcLeoPkg/GPLLibrary/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
-  HtcLeoVibrationLib|HtcLeoPkg/Library/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
 
@@ -231,7 +231,7 @@
   # SoC Drivers
   HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
-  HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
+  HtcLeoPkg/GPLDrivers/SdccDxe/SdccDxe.inf
   HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
   HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
 

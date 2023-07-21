@@ -124,7 +124,7 @@ APRIORI DXE {
   # SoC Drivers
   INF HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   INF HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
-  INF HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
+  INF HtcLeoPkg/GPLDrivers/SdccDxe/SdccDxe.inf
   INF HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
   INF HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
 

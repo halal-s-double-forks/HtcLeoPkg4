@@ -16,3 +16,7 @@ Get to load ReactOS /s
  - cedesmith and others for creating the lk port for Leo
  - n0d3 for the work on the sdcard driver in lk
 
+## License
+All code except drivers in `GPLDrivers` and libraries in `GPLLibrary` directory is licensed under BSD 2-Clause. 
+GPL Drivers are licensed under GPLv2 license.
+
