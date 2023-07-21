@@ -23,24 +23,12 @@
 #ifndef __PLATFORM_TIMER_H
 #define __PLATFORM_TIMER_H
 
-//typedef int status_t;
-typedef unsigned long long bigtime_t;
-
-/*
-typedef enum handler_return(*platform_timer_callback)(void *arg, time_t now);
-
-status_t platform_set_periodic_timer(platform_timer_callback callback, void *arg, time_t interval);
-*/
-
-//inline void delay_ticks(unsigned ticks);
-void delay_ticks(unsigned ticks);
+#define DGT_ENABLE_CLR_ON_MATCH_EN        2
+#define DGT_ENABLE_EN                     1
+#define DGT_HZ 4800000	/* Uses TCXO/4 (19.2 MHz / 4) */
 
 extern void mdelay(unsigned msecs);
-
 extern void udelay(unsigned usecs);
-/*
-uint32_t platform_tick_rate(void);
-*/
 
 #endif
 

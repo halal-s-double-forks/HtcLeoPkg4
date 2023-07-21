@@ -29,11 +29,7 @@
 
 #include <Chipset/iomap.h>
 #include <Chipset/irqs.h>
-
-
-#define DGT_ENABLE_CLR_ON_MATCH_EN        2
-#define DGT_ENABLE_EN                     1
-#define DGT_HZ 4800000	/* Uses TCXO/4 (19.2 MHz / 4) */
+#include <Chipset/timer.h>
 
 //
 // Notifications
@@ -184,6 +180,7 @@ TimerDriverSetTimerPeriod (
   {
     // Turn off the timer.
     MmioWrite32(DGT_ENABLE, 0);
+    MmioWrite32(DGT_CLEAR, 0);
     Status = gInterrupt->DisableInterruptSource(gInterrupt, gVector);
   } 
   else 
@@ -191,7 +188,7 @@ TimerDriverSetTimerPeriod (
     /* Disable the timer interrupt */
     Status = gInterrupt->DisableInterruptSource(gInterrupt, gVector);
 
-    // The code expects time in ms
+    // The following code expects time in ms
     TimerCount = TimerPeriod / 10000;
 
     MmioWrite32(DGT_MATCH_VAL, TimerCount * (DGT_HZ / 1000));
@@ -361,11 +358,7 @@ TimerInitialize (
   ASSERT_EFI_ERROR (Status);
 
   // Set up default timer (1ms period)
-  // 1 Milliseconds = 1000000 Nanoseconds
-  /* TimerDriverSetTimerPeriod expects time in 100 nanoseconds units
-   * and edk2 wants 1ms period
-   * 1ms = 100 * 10000 ns */
-  Status = TimerDriverSetTimerPeriod (&gTimer, FixedPcdGet32(PcdTimerPeriod));//10000
+  Status = TimerDriverSetTimerPeriod (&gTimer, FixedPcdGet32(PcdTimerPeriod));
   ASSERT_EFI_ERROR (Status);
 
   // Install the Timer Architectural Protocol onto a new handle

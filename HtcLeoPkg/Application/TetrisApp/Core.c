@@ -28,31 +28,11 @@ void handleInput(Core *this)
     }
     else {
       switch (key.ScanCode) {
-      case CHAR_BACKSPACE:
-        if (this->gameState == GAME_STATE_RUNNING ||
-            this->gameState == GAME_STATE_PAUSED) {
-          togglePause(this);
-        }
-        break;
 
       case SCAN_HOME:
         if (this->gameState == GAME_STATE_RUNNING) {
           this->board->dropPiece(this->board);
           resetTickCounter(this);
-        }
-        break;
-
-      case CHAR_TAB:
-        if (this->gameState == GAME_STATE_RUNNING) {
-          this->board->rotatePiece(this->board);
-        }
-        break;
-
-      case CHAR_CARRIAGE_RETURN:
-        if (this->gameState == GAME_STATE_RUNNING) {
-          if (!this->board->movePieceDown(this->board)) {
-            resetTickCounter(this);
-          }
         }
         break;
 
@@ -72,6 +52,31 @@ void handleInput(Core *this)
         this->gameState = GAME_STATE_EXIT;
         break;
       default:
+
+        switch (key.UnicodeChar) {
+        case CHAR_CARRIAGE_RETURN:
+          if (this->gameState == GAME_STATE_RUNNING) {
+            if (!this->board->movePieceDown(this->board)) {
+              resetTickCounter(this);
+            }
+          }
+          break;
+
+        case CHAR_TAB:
+          if (this->gameState == GAME_STATE_RUNNING) {
+            this->board->rotatePiece(this->board);
+          }
+          break;
+
+        case CHAR_BACKSPACE:
+          if (this->gameState == GAME_STATE_RUNNING ||
+              this->gameState == GAME_STATE_PAUSED) {
+            togglePause(this);
+          }
+          break;
+        default:
+          break;
+        }
         break;
       }
     }

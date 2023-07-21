@@ -144,6 +144,11 @@ EnableInterruptSource (
   IN HARDWARE_INTERRUPT_SOURCE          Source
   )
 {
+  if (Source > NR_IRQS) {
+    ASSERT(FALSE);
+    return EFI_UNSUPPORTED;
+  }
+  
   /* Called by unmask_interrupt() */
   unsigned reg = (Source > 31) ? VIC_INT_ENSET1 : VIC_INT_ENSET0;
 	unsigned bit = 1 << (Source & 31);
@@ -170,6 +175,11 @@ DisableInterruptSource (
   IN HARDWARE_INTERRUPT_SOURCE          Source
   )
 {
+  if (Source > NR_IRQS) {
+    ASSERT(FALSE);
+    return EFI_UNSUPPORTED;
+  }
+
   /* Called by mask_interrupt() */
   unsigned reg = (Source > 31) ? VIC_INT_ENCLEAR1 : VIC_INT_ENCLEAR0;
 	unsigned bit = 1 << (Source & 31);
@@ -198,7 +208,22 @@ GetInterruptSourceState (
   IN BOOLEAN                            *InterruptState
   )
 {
-  /* TBD */
+  UINTN Bit;
+
+  if (Source > NR_IRQS) {
+    ASSERT(FALSE);
+    return EFI_UNSUPPORTED;
+  }
+
+	Bit = 1 << (Source & 31);
+
+  if ((MmioRead32((Source > 31) ? VIC_INT_ENCLEAR1 : VIC_INT_ENCLEAR0) & Bit) == Bit) {
+    *InterruptState = FALSE;
+  }
+  else {
+    *InterruptState = TRUE;
+  }
+
   return EFI_SUCCESS;
 }
 
@@ -220,7 +245,11 @@ EndOfInterrupt (
   IN HARDWARE_INTERRUPT_SOURCE          Source
   )
 {
-  // Clear after running the handler (Is this really clearing???)
+  if (Source > NR_IRQS) {
+    ASSERT(FALSE);
+    return EFI_UNSUPPORTED;
+  }
+
   MmioWrite32(VIC_IRQ_VEC_WR, 0);
   ArmDataSynchronizationBarrier ();
 
@@ -250,9 +279,6 @@ IrqInterruptHandler (
   HARDWARE_INTERRUPT_HANDLER InterruptHandler;
   
   Vector = MmioRead32 (VIC_IRQ_VEC_RD);
-
-  DEBUG((EFI_D_INFO, "Vector: %p\n", Vector));//debugging
-
   MmioWrite32((Vector > 31) ? VIC_INT_CLEAR1 : VIC_INT_CLEAR0, 1 << (Vector & 31));
 
   // Needed to prevent infinite nesting when Time Driver lowers TPL
@@ -264,7 +290,7 @@ IrqInterruptHandler (
     InterruptHandler (Vector, SystemContext);
   }
 
-  // Clear after running the handler (Is this really clearing???)
+  // Clear after running the handler
   MmioWrite32(VIC_IRQ_VEC_WR, 0);
   ArmDataSynchronizationBarrier ();
 }
