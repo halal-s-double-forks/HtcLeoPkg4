@@ -1,3 +1,4 @@
+#include "menu.h"
 #include "CommonHeader.h"
 #include <Chipset/timer.h>
 #include <Library/BaseLib.h>
@@ -9,43 +10,16 @@
 #include <Resources/FbColor.h>
 #include <Uefi.h>
 
-typedef struct {
-  const UINT8   index;
-  const CHAR16 *name;
-  void (*function)();
-} MenuEntry;
-
-
 MenuEntry menuOptions[] = {
-    {1, L"Option 1", &option1Function},
-    {2, L"Option 2", &option2Function},
-    {3, L"Play Tetris", &startTetris},
-    {4, L"Exit", &exitMenu}};
+    {1, L"Option 1", TRUE, &option1Function},
+    {2, L"Option 2", TRUE, &option2Function},
+    {3, L"Play Tetris", TRUE, &startTetris},
+    {4, L"Reboot Menu", TRUE, &rebootMenu},
+    {5, L"Exit", TRUE, &exitMenu}};
 
-UINTN menuOptionCount = sizeof(menuOptions) / sizeof(menuOptions[0]);
+UINTN menuOptionCount = 0;
 
 UINTN selectedIndex = 0;
-
-
-void option1Function(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void option2Function(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void exitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void startTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void prepareConsole(
-    IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
-    OUT EFI_SIMPLE_TEXT_OUTPUT_MODE    *modeToStore);
-void restoreInitialConsoleMode(
-    IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
-    IN EFI_SIMPLE_TEXT_OUTPUT_MODE     *storedMode);
-void HandleKeyInput(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-
-EFI_STATUS StartAnotherApp(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable,
-    IN EFI_GUID *AppGuid);
-
 
 void prepareConsole(
     IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
@@ -84,38 +58,31 @@ void restoreInitialConsoleMode(
   ASSERT_EFI_ERROR(status);
 }
 
+UINTN getActiveMenuEntryLength()
+{
+  UINTN menuCount = 0;
+  for (UINTN i = 0; i < sizeof(menuOptions) / sizeof(menuOptions[0]); i++) {
+    if (menuOptions[i].isActive) {
+      menuCount++;
+    }
+  }
+  return menuCount;
+}
+
 EFI_STATUS EFIAPI
 ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
+  DEBUG((EFI_D_ERROR, "main \n"));
   EFI_SIMPLE_TEXT_OUTPUT_MODE initialMode;
+
+  EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut = gST->ConOut;
 
   prepareConsole(SystemTable->ConOut, &initialMode);
 
-  // Print menu title
-  gST->ConOut->SetAttribute(gST->ConOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_RED));
-  setCursorPos(15, 1);
-  Print(L" HtcLeoRevivalProject EDK2 Main Menu ");
-
-  // Print menu options
-  EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut = gST->ConOut;
-  consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
-
   // Loop that never exits
   while (TRUE) {
-    UINTN i;
-    for (i = 0; i < menuOptionCount; i++) {
-      setCursorPos(25, 3 + i);
-      if (i == selectedIndex) {
-        consoleOut->SetAttribute(
-            consoleOut, EFI_TEXT_ATTR(EFI_YELLOW, EFI_BLACK));
-      }
-      else {
-        consoleOut->SetAttribute(
-            consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
-      }
-      Print(L"%d. %s ", menuOptions[i].index, menuOptions[i].name);
-    }
 
+    drawMenu(consoleOut);
     HandleKeyInput(ImageHandle, SystemTable);
   }
 
@@ -123,6 +90,37 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   restoreInitialConsoleMode(SystemTable->ConOut, &initialMode);
 
   return EFI_SUCCESS;
+}
+
+void drawMenu(IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut)
+{
+  menuOptionCount = getActiveMenuEntryLength();
+
+  // Print menu title
+  gST->ConOut->SetAttribute(gST->ConOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_RED));
+  setCursorPos(15, 1);
+  Print(L" HtcLeoRevivalProject EDK2 Main Menu ");
+
+  // Print menu options
+
+  consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
+
+  for (UINTN i = 0; i < sizeof(menuOptions) / sizeof(menuOptions[0]); i++) {
+    setCursorPos(25, 3 + i);
+    if (i == selectedIndex) {
+      consoleOut->SetAttribute(
+          consoleOut, EFI_TEXT_ATTR(EFI_YELLOW, EFI_BLACK));
+    }
+    else {
+      consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
+    }
+    // DEBUG((EFI_D_ERROR, "Index is: %d // isActive is: %d\n",
+    // menuOptions[i].index, menuOptions[i].isActive)); Print(L"%d. %s ",
+    // menuOptions[i].index, menuOptions[i].name);
+    if (menuOptions[i].isActive) {
+      Print(L"%d. %s ", menuOptions[i].index, menuOptions[i].name);
+    }
+  }
 }
 
 void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
@@ -159,6 +157,7 @@ void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
       break;
     case SCAN_ESC:
       // power button
+
       break;
 
     default:
@@ -172,6 +171,10 @@ void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 
       case CHAR_TAB:
         // windows button
+        DEBUG(
+            (EFI_D_ERROR, "%d Menuentries are marked as active\n",
+             getActiveMenuEntryLength()));
+        DEBUG((EFI_D_ERROR, "selectedIndex is: %d\n", selectedIndex));
         break;
 
       case CHAR_BACKSPACE:
@@ -231,6 +234,20 @@ void option1Function(
 {
   DEBUG((EFI_D_ERROR, "You selected Option 1\n"));
 }
+
+void rebootMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+{
+  selectedIndex     = 0;
+  EFI_STATUS status = SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
+  ASSERT_EFI_ERROR(status);
+  menuOptions[0] = (MenuEntry){1, L"Reboot to CLK", TRUE, &nullfunction};
+  menuOptions[1] = (MenuEntry){2, L"Reboot", TRUE, &nullfunction};
+  menuOptions[2] = (MenuEntry){3, L"Shutdown", TRUE, &nullfunction};
+  menuOptions[3] = (MenuEntry){4, L"", FALSE, &nullfunction};
+  menuOptions[4] = (MenuEntry){5, L"", FALSE, &nullfunction};
+}
+
+void nullfunction() {}
 
 void option2Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
