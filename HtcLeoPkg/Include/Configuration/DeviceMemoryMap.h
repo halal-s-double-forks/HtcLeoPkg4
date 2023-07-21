@@ -69,15 +69,14 @@ static ARM_MEMORY_REGION_DESCRIPTOR_EX gDeviceMemoryDescriptorEx[] =
   /* Name   Address, Length,  HobOption        ResourceAttribute    ArmAttributes  ResourceType          MemoryType */
 
   /* DDR Regions */
-  {"APPSBL",            0x00000000, 0x00100000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK_XN},
+  {"HLOS 0",            0x00000000, 0x00100000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
   {"SMEM",              0x00100000, 0x00100000, AddMem, MEM_RES, UNCACHEABLE,   Reserv, UNCACHED_UNBUFFERED},
-  {"OEMSBL",            0x00200000, 0x00200000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
-  {"Reserved 1",        0x00400000, 0x02600000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
-  {"Display Reserved",  0x02A00000, 0x00C00000, AddMem, MEM_RES, WRITE_THROUGH, MaxMem, WRITE_THROUGH_XN},
+  {"Reserved 1",        0x00200000, 0x02800000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
+  {"Display Reserved",  0x02A00000, 0x00C00000, AddMem, MEM_RES, WRITE_THROUGH, MaxMem, WRITE_THROUGH},
   {"Reserved 2",        0x03600000, 0x0E200000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
   {"HLOS 1",            0x11800000, 0x1A800000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
   {"UEFI FD",           0x2C000000, 0x00200000, AddMem, SYS_MEM, SYS_MEM_CAP,   BsCode, WRITE_BACK},
-  {"HLOS 2",            0x2C200000, 0x03E00000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
+  {"HLOS 1",            0x2C200000, 0x03E00000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
 
   /* Peripheral regions */
   {"SDC1",              0xA0300000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
