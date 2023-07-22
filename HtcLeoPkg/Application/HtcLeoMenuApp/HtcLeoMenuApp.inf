@@ -29,6 +29,8 @@
   MemoryAllocationLib 
   BaseMemoryLib
   TimerLib
+  ResetSystemLib
+  UefiBootManagerLib
 
   [Protocols]
   gEfiLoadedImageProtocolGuid

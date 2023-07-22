@@ -33,5 +33,10 @@ void drawMenu(IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut);
 
 void  nullfunction();
 UINTN getActiveMenuEntryLength();
+void returnToMainMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void shutdownWrapper(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void rebootWrapper(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void enterBootMGR(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 
 #endif

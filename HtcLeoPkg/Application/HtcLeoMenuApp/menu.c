@@ -3,19 +3,22 @@
 #include <Chipset/timer.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
+#include <Library/HtcLeoPlatformResetLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Protocol/LoadedImage.h>
 #include <Resources/FbColor.h>
 #include <Uefi.h>
+#include <Library/UefiBootManagerLib.h>
 
 MenuEntry menuOptions[] = {
     {1, L"Option 1", TRUE, &option1Function},
     {2, L"Option 2", TRUE, &option2Function},
     {3, L"Play Tetris", TRUE, &startTetris},
     {4, L"Reboot Menu", TRUE, &rebootMenu},
-    {5, L"Exit", TRUE, &exitMenu}};
+    {5, L"Exit to Bootmgr", TRUE, &enterBootMGR},
+    {6, L"Exit", TRUE, &exitMenu}};
 
 UINTN menuOptionCount = 0;
 
@@ -106,6 +109,9 @@ void drawMenu(IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut)
   consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
 
   for (UINTN i = 0; i < sizeof(menuOptions) / sizeof(menuOptions[0]); i++) {
+    if (!menuOptions[i].isActive) {
+      break;
+    }
     setCursorPos(25, 3 + i);
     if (i == selectedIndex) {
       consoleOut->SetAttribute(
@@ -114,12 +120,8 @@ void drawMenu(IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut)
     else {
       consoleOut->SetAttribute(consoleOut, EFI_TEXT_ATTR(EFI_WHITE, EFI_BLACK));
     }
-    // DEBUG((EFI_D_ERROR, "Index is: %d // isActive is: %d\n",
-    // menuOptions[i].index, menuOptions[i].isActive)); Print(L"%d. %s ",
-    // menuOptions[i].index, menuOptions[i].name);
-    if (menuOptions[i].isActive) {
-      Print(L"%d. %s ", menuOptions[i].index, menuOptions[i].name);
-    }
+
+    Print(L"%d. %s ", menuOptions[i].index, menuOptions[i].name);
   }
 }
 
@@ -136,6 +138,7 @@ void HandleKeyInput(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     switch (key.ScanCode) {
     case SCAN_HOME:
       // home button
+      returnToMainMenu(ImageHandle, SystemTable);
       break;
     case SCAN_UP:
       // volume up button
@@ -234,6 +237,27 @@ void option1Function(
 {
   DEBUG((EFI_D_ERROR, "You selected Option 1\n"));
 }
+void enterBootMGR(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable){
+  EFI_STATUS                   Status;
+  EFI_BOOT_MANAGER_LOAD_OPTION BootManagerMenu;
+  Status = EfiBootManagerGetBootManagerMenu(&BootManagerMenu);
+    if (!EFI_ERROR(Status)) {
+    EfiBootManagerBoot(&BootManagerMenu);
+  }
+  else {
+    rebootWrapper(ImageHandle, SystemTable);
+  }
+}
+void shutdownWrapper(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+{
+  htcleo_shutdown();
+}
+
+void rebootWrapper(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+{
+  ResetCold();
+}
 
 void rebootMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -241,13 +265,32 @@ void rebootMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
   EFI_STATUS status = SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
   ASSERT_EFI_ERROR(status);
   menuOptions[0] = (MenuEntry){1, L"Reboot to CLK", TRUE, &nullfunction};
-  menuOptions[1] = (MenuEntry){2, L"Reboot", TRUE, &nullfunction};
-  menuOptions[2] = (MenuEntry){3, L"Shutdown", TRUE, &nullfunction};
+  menuOptions[1] = (MenuEntry){2, L"Reboot", TRUE, &rebootWrapper};
+  menuOptions[2] = (MenuEntry){3, L"Shutdown", TRUE, &shutdownWrapper};
   menuOptions[3] = (MenuEntry){4, L"", FALSE, &nullfunction};
   menuOptions[4] = (MenuEntry){5, L"", FALSE, &nullfunction};
+   menuOptions[5] = (MenuEntry){6, L"", FALSE, &nullfunction};
 }
 
-void nullfunction() {}
+void returnToMainMenu(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+{
+  selectedIndex     = 0;
+  EFI_STATUS status = SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
+  ASSERT_EFI_ERROR(status);
+
+  menuOptions[0] = (MenuEntry){1, L"Option 1", TRUE, &option1Function};
+  menuOptions[1] = (MenuEntry){2, L"Option 2", TRUE, &option2Function};
+  menuOptions[2] = (MenuEntry){3, L"Play Tetris", TRUE, &startTetris};
+  menuOptions[3] = (MenuEntry){4, L"Reboot Menu", TRUE, &rebootMenu};
+  menuOptions[4] = (MenuEntry){5, L"Exit to Bootmgr", TRUE, &enterBootMGR},
+  menuOptions[5] = (MenuEntry){6, L"Exit", TRUE, &exitMenu};
+}
+
+void nullfunction()
+{
+  DEBUG((EFI_D_ERROR, "This feature is not supported yet\n"));
+}
 
 void option2Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
