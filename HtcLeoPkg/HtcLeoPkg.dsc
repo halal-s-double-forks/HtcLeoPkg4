@@ -119,6 +119,9 @@
 
   gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString|L"Testing"
 
+  # Memory protection
+  gEfiMdeModulePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x00000000
+
   # System Memory (576MB)
   gArmTokenSpaceGuid.PcdSystemMemoryBase|0x11800000
   gArmTokenSpaceGuid.PcdSystemMemorySize|0x1E800000
