@@ -39,6 +39,7 @@ STATIC struct ReservedMemory {
     { 0x00200000, 0x00200000 },    // OEMSBL
     { 0x00400000, 0x02100000 },    // AMSS
     { 0x02A00000, 0x000BBB00 },    // Display Reserved
+    { 0x2FFB0000, 0x00000004 },    // Boot reason
 };
 
 /**
