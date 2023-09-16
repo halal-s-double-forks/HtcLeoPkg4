@@ -32,9 +32,6 @@
 
 #include <Library/BootReason.h>
 
-#define LK_BOOTREASON_ADDR 		0x2FFB0000
-#define MARK_LK_TAG 	0X004B4C63
-
 VOID EFIAPI reboot (unsigned rebootReason){
   msm_proc_comm(PCOM_RESET_CHIP, &rebootReason, 0);
   for(;;) ;
