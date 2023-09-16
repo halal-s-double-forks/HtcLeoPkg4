@@ -64,6 +64,8 @@ typedef struct {
 #define UNCACHED_UNBUFFERED ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED
 #define UNCACHED_UNBUFFERED_XN ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED
 
+/* Unused, see map in HtcLeoPkgLib */
+
 static ARM_MEMORY_REGION_DESCRIPTOR_EX gDeviceMemoryDescriptorEx[] =
 {
   /* Name   Address, Length,  HobOption        ResourceAttribute    ArmAttributes  ResourceType          MemoryType */
