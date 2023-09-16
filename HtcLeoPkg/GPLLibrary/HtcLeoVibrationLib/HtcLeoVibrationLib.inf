@@ -19,6 +19,7 @@
   TimerLib
   ArmLib
   MsmTargetGpioLib
+  TimerLib
   
 
 [Packages]

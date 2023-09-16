@@ -44,10 +44,7 @@
   BaseLib
   DebugLib
   UefiBootServicesTableLib
-
-  AdmLib
   MsmTargetGpioLib
-  #MsmPcomClientLib
   TimerLib
 
 [Guids]

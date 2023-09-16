@@ -33,18 +33,19 @@ EFIAPI
 SerialPortInitialize (
     VOID
 ) {
-#if 0
-    UINT8 *base = (UINT8 *)0xa1a10000ull;
-    for (UINTN i = 0; i < 0x200000; i++)
-        base[i] = 0;
-#endif
+    /*UINT8 *base = (UINT8 *)FixedPcdGet32(PcdPstoreAddress);
+    for (UINTN i = 0; i < FixedPcdGet8(PcdPstoreSize); i++)
+        base[i] = 0;*/
+
     return RETURN_SUCCESS;
 }
 
 static void mem_putchar(UINT8 c) {
-    static const UINTN size = 0x200000;
+    static UINT32 BaseAddr = FixedPcdGet32(PcdPstoreAddress);
+    static const UINT32 size = FixedPcdGet32(PcdPstoreSize);
     static UINTN offset = 0;
-    UINT8 *base = (UINT8 *)0xa1a10000ull;
+    
+    UINT8 *base = (UINT8 *)BaseAddr;
     base[offset++] = c;
     if (offset >= size)
         offset = 0;

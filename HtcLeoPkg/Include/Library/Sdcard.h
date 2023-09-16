@@ -63,8 +63,8 @@
 #define __MMC_H
 
 //#include <list.h>
-#include "list.h"
-#include "part.h"
+//#include "list.h"
+//#include "part.h"
 
 // Choose the SD controller to use. SDC1, 2, 3, or 4.
 #define SDC_INSTANCE  2
@@ -374,79 +374,32 @@ enum SD_MCLK_speed
 #define SD_SWITCH_CHECK				0
 #define SD_SWITCH_SWITCH			1
 
-typedef struct mmc_cmd {
-	ushort cmdidx;
-	uint resp_type;
-	uint cmdarg;
-	uint response[4];
-	uint flags;
-}mmc_cmd_t;
-
-typedef struct mmc_data {
-	char *dest;
-	const char *src; /* src buffers don't get written to */
-	uint flags;
-	uint blocks;
-	uint blocksize;
-}mmc_data_t;
-
-typedef struct mmc {
-	struct list_node link;
-	char name[32];
-	void *priv;
-	uint voltages;
-	uint version;
-	uint f_min;
-	uint f_max;
-	int high_capacity;
-	uint bus_width;
-	uint clock;
-	uint card_caps;
-	uint host_caps;
-	uint ocr;
-	uint scr[2];
-	uint csd[4];
-	uint cid[4];
-	ushort rca;
-	uint tran_speed;
-	uint read_bl_len;
-	uint write_bl_len;
-	uint64_t capacity;
-	block_dev_desc_t block_dev;
-	int (*send_cmd)(struct mmc *mmc, mmc_cmd_t *cmd, mmc_data_t *data);
-	void (*set_ios)(struct mmc *mmc);
-	int (*init)(struct mmc *mmc);
-}mmc_t;
-
 typedef struct sd_parms {
-   uint32_t instance;                  // which instance of the SD controller
-   uint32_t base;                      // SD controller base address
-   uint32_t ns_addr;                   // Clock controller NS reg address
-   uint32_t md_addr;                   // Clock controller MD reg address
-   uint32_t ns_initial;                // Clock controller NS reg initial value
-   uint32_t md_initial;                // Clock controller MD reg initial value
-   uint32_t row_reset_mask;            // Bit in the ROW reset register
-   uint32_t glbl_clk_ena_mask;         // Bit in the global clock enable
-   uint32_t glbl_clk_ena_initial;      // Initial value of the global clock enable bit                                
-   uint32_t adm_crci_num;              // ADM CRCI number
-   uint32_t adm_ch8_rslt_conf_initial; // Initial value of HI0_CH8_RSLT_CONF_SD3                                  
+   UINT32 instance;                  // which instance of the SD controller
+   UINT32 base;                      // SD controller base address
+   UINT32 ns_addr;                   // Clock controller NS reg address
+   UINT32 md_addr;                   // Clock controller MD reg address
+   UINT32 ns_initial;                // Clock controller NS reg initial value
+   UINT32 md_initial;                // Clock controller MD reg initial value
+   UINT32 row_reset_mask;            // Bit in the ROW reset register
+   UINT32 glbl_clk_ena_mask;         // Bit in the global clock enable
+   UINT32 glbl_clk_ena_initial;      // Initial value of the global clock enable bit                                
+   UINT32 adm_crci_num;              // ADM CRCI number
+   UINT32 adm_ch8_rslt_conf_initial; // Initial value of HI0_CH8_RSLT_CONF_SD3                                  
 }sd_parms_t;
 
-mmc_t htcleo_mmc;
-sd_parms_t htcleo_sdcc;
-
-int  mmc_ready; // Will be set to 1 if sdcard is ready
-
-int  sdcc_init(mmc_t *mmc);
-void sdcc_set_ios(mmc_t *mmc);
-int  sdcc_send_cmd(mmc_t *mmc, mmc_cmd_t *cmd, mmc_data_t *data);
-
-int   mmc_init(mmc_t *mmc);
-int   mmc_register(mmc_t *mmc);
-ulong mmc_bread(UINT32 start, UINT32 blkcnt, void *dst);
-
-void SDCn_deinit(uint32_t instance);
-int  mmc_legacy_init();
-void sdcard_gpio_config(int instance);
+#define UNSTUFF_BITS(resp,start,size)					\
+	({								\
+		const int __size = size;				\
+		const UINT32 __mask = (__size < 32 ? 1 << __size : 0) - 1;	\
+		const INT32 __off = 3 - ((start) / 32);			\
+		const INT32 __shft = (start) & 31;			\
+		UINT32 __res;						\
+									\
+		__res = resp[__off] >> __shft;				\
+		if (__size + __shft > 32)				\
+			__res |= resp[__off-1] << ((32 - __shft) % 32);	\
+		__res & __mask;						\
+	})
 
 #endif /* __MMC_H */

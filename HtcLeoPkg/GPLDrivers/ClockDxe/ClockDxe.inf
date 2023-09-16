@@ -44,16 +44,12 @@
   BaseLib
   DebugLib
   UefiBootServicesTableLib
-
-  AdmLib
-  MsmTargetClockLib
-  MsmPcomClientLib
+  MsmPcomLib
   TimerLib
 
 [Guids]
 
 [Protocols]
-  gEfiBlockIoProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
 

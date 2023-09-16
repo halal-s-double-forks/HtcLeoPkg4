@@ -184,83 +184,86 @@ EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
 }
 
 extern void gpio_set(unsigned n, unsigned on);
-extern int  gpio_get(unsigned n);
+extern int gpio_get(unsigned n);
 
-EFI_EVENT m_CallbackTimer         = NULL;
+EFI_EVENT m_CallbackTimer = NULL;
 EFI_EVENT m_ExitBootServicesEvent = NULL;
 BOOLEAN timerRunning = FALSE;
 
 // Callback function to disable the GPIO after a certain time
 VOID EFIAPI DisableKeyPadLed(IN EFI_EVENT Event, IN VOID *Context)
 {
-  // Disable the GPIO
-  gpio_set(HTCLEO_GPIO_KP_LED, 0);
-  timerRunning = FALSE;
+    // Disable the GPIO
+    gpio_set(HTCLEO_GPIO_KP_LED, 0);
+    timerRunning = FALSE;
 }
 
 // Function to enable the GPIO and schedule the callback
 VOID EnableKeypadLedWithTimer(VOID)
 {
-  timerRunning = TRUE;
-  gpio_set(HTCLEO_GPIO_KP_LED, 1);
-  EFI_STATUS Status;
+    if (timerRunning) {
+        // Cancel the running timer
+        gBS->SetTimer(m_CallbackTimer, TimerCancel, 0);
+        timerRunning = FALSE;
+    }
 
-  Status = gBS->CreateEvent(
-      EVT_NOTIFY_SIGNAL | EVT_TIMER, TPL_CALLBACK, DisableKeyPadLed, NULL,
-      &m_CallbackTimer);
+    gpio_set(HTCLEO_GPIO_KP_LED, 1);
+    EFI_STATUS Status;
 
-  ASSERT_EFI_ERROR(Status);
+    Status = gBS->CreateEvent(
+        EVT_NOTIFY_SIGNAL | EVT_TIMER, TPL_CALLBACK, DisableKeyPadLed, NULL,
+        &m_CallbackTimer);
 
-  Status = gBS->SetTimer(
-      m_CallbackTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(5000));
+    ASSERT_EFI_ERROR(Status);
 
-  ASSERT_EFI_ERROR(Status);
+    Status = gBS->SetTimer(
+        m_CallbackTimer, TimerRelative, EFI_TIMER_PERIOD_MILLISECONDS(5000));
+
+    ASSERT_EFI_ERROR(Status);
+
+    timerRunning = TRUE;
 }
 
 EFI_STATUS KeypadDeviceImplGetKeys(
     KEYPAD_DEVICE_PROTOCOL *This, KEYPAD_RETURN_API *KeypadReturnApi,
     UINT64 Delta)
 {
-  UINT8   GpioStatus;
-  BOOLEAN IsPressed;
-  UINTN   Index;
-  // DEBUG((EFI_D_ERROR, "KeypadDeviceImplGetKeys!\n"));
+    UINT8 GpioStatus;
+    BOOLEAN IsPressed;
+    UINTN Index;
 
-  for (Index = 0; Index < (sizeof(KeyList) / sizeof(KeyList[0])); Index++) {
-    KEY_CONTEXT_PRIVATE *Context = KeyList[Index];
+    for (Index = 0; Index < (sizeof(KeyList) / sizeof(KeyList[0])); Index++) {
+        KEY_CONTEXT_PRIVATE *Context = KeyList[Index];
 
-    // check if this is a valid key
-    if (Context->IsValid == FALSE)
-      continue;
+        // check if this is a valid key
+        if (Context->IsValid == FALSE)
+            continue;
 
-    // get status
-    if (Context->DeviceType == KEY_DEVICE_TYPE_LEGACY) {
-      // impliement hd2 gpio shit here
-      GpioStatus = gpio_get(Context->Gpio);
+        // get status
+        if (Context->DeviceType == KEY_DEVICE_TYPE_LEGACY) {
+            // implement hd2 gpio stuff here
+            GpioStatus = gpio_get(Context->Gpio);
+        } else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
+            gpio_set(Context->GpioOut, 0);
+            GpioStatus = gpio_get(Context->GpioIn);
+        } else {
+            continue;
+        }
+
+        // update key status
+        IsPressed = (GpioStatus ? 1 : 0) ^ Context->ActiveLow;
+
+        if (IsPressed && !Context->IsVolumeKey) {
+            EnableKeypadLedWithTimer();
+        }
+
+        if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
+            gpio_set(Context->GpioOut, 1);
+        }
+
+        LibKeyUpdateKeyStatus(
+            &Context->EfiKeyContext, KeypadReturnApi, IsPressed, Delta);
     }
-    else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-      gpio_set(Context->GpioOut, 0);
-      GpioStatus = gpio_get(Context->GpioIn);
-    }
-    else {
-      continue;
-    }
 
-    // update key status
-    // 0000 ^0001 = 0001 = decimal 1
-    IsPressed = (GpioStatus ? 1 : 0) ^ Context->ActiveLow;
-
-    if (IsPressed && !Context->IsVolumeKey && !timerRunning) {
-      EnableKeypadLedWithTimer();
-    }
-
-    if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-      gpio_set(Context->GpioOut, 1);
-    }
-
-    LibKeyUpdateKeyStatus(
-        &Context->EfiKeyContext, KeypadReturnApi, IsPressed, Delta);
-  }
-
-  return EFI_SUCCESS;
+    return EFI_SUCCESS;
 }

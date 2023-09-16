@@ -194,4 +194,7 @@ void msm_gpio_set_owner(unsigned gpio, unsigned owner);
 void msm_gpio_init(void);
 void msm_gpio_deinit(void);
 
+/* Specific gpios definitions */
+#define HTCLEO_GPIO_SD_STATUS 153
+
 #endif	//__PLATFORM_QSD8K_GPIO_HW_H

@@ -33,11 +33,11 @@
 #include <Library/ArmLib.h>
 
 #include <Library/LKEnvLib.h>
+#include <Library/TimerLib.h>
 #include <Library/pcom.h>
 
 #include <Chipset/clock.h>
 
-void udelay(unsigned usecs);
 extern void dsb();
 
 /* This function always returns 0, unless future versions check for
@@ -52,7 +52,7 @@ static int pcom_wait_for(UINT32 addr, UINT32 value)
 		if (readl(addr) == value){
 			return 0;
 		}
-		udelay(5);
+		NanoSecondDelay(5);
 	}
 }
 

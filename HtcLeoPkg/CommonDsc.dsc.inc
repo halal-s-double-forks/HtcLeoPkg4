@@ -20,6 +20,11 @@
   DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
 !endif
   DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
+!if $(USE_SCREEN_FOR_SERIAL_OUTPUT) == 1
+  SerialPortLib|HtcLeoPkg/Library/FrameBufferSerialPortLib/FrameBufferSerialPortLib.inf
+!else
+  SerialPortLib|HtcLeoPkg/Library/InMemorySerialPortLib/InMemorySerialPortLib.inf
+!endif
 
   BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
   BmpSupportLib|MdeModulePkg/Library/BaseBmpSupportLib/BaseBmpSupportLib.inf
@@ -55,7 +60,7 @@
 
   # ARM Architectural Libraries
   CacheMaintenanceLib|ArmPkg/Library/ArmCacheMaintenanceLib/ArmCacheMaintenanceLib.inf
-  DefaultExceptionHandlerLib|ArmPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf
+  DefaultExceptionHandlerLib|HtcLeoPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf
   CpuExceptionHandlerLib|ArmPkg/Library/ArmExceptionLib/ArmExceptionLib.inf
   ArmDisassemblerLib|ArmPkg/Library/ArmDisassemblerLib/ArmDisassemblerLib.inf
   #_ArmGicLib|ArmPkg/Drivers/ArmGic/ArmGicLib.inf
@@ -71,7 +76,7 @@
   PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
   PL011UartLib|ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
 
-  TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
+  TimerLib|HtcLeoPkg/Library/GPTTimerLib/GPTTimerLib.inf
   InterruptsLib|HtcLeoPkg/Library/InterruptsLib/InterruptsLib.inf
 
   UefiDevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf

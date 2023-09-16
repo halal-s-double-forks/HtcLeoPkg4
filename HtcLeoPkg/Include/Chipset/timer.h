@@ -27,8 +27,5 @@
 #define DGT_ENABLE_EN                     1
 #define DGT_HZ 4800000	/* Uses TCXO/4 (19.2 MHz / 4) */
 
-extern void mdelay(unsigned msecs);
-extern void udelay(unsigned usecs);
-
 #endif
 

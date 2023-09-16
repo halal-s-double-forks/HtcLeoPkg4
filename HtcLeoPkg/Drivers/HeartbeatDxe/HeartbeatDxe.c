@@ -28,7 +28,7 @@ VOID EFIAPI LedHeartbeatCallback(
 {
     // Turn on button backlight
     gpio_set(HTCLEO_GPIO_KP_LED, 1);
-	mdelay(500);
+	MicroSecondDelay(500);
 	gpio_set(HTCLEO_GPIO_KP_LED, 0);
 }
 

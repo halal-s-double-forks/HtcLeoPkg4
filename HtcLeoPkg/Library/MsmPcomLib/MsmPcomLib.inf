@@ -27,4 +27,5 @@
   DebugLib
   IoLib
   ArmLib
+  TimerLib
 

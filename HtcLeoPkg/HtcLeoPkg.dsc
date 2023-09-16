@@ -26,6 +26,9 @@
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = HtcLeoPkg/HtcLeoPkg.fdf
 
+  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = TRUE
+  DEFINE USE_MEMORY_FOR_SERIAL_OUTPUT = 0
+
 !include HtcLeoPkg/CommonDsc.dsc.inc
 
 [LibraryClasses]
@@ -40,7 +43,7 @@
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmPlatformLib|HtcLeoPkg/Library/HtcLeoPkgLib/HtcLeoPkgLib.inf
-  TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
+  TimerLib|HtcLeoPkg/Library/GPTTimerLib/GPTTimerLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
   PlatformBootManagerLib|HtcLeoPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
@@ -53,7 +56,6 @@
   DxeServicesLib|MdePkg/Library/DxeServicesLib/DxeServicesLib.inf
   BootLogoLib|MdeModulePkg/Library/BootLogoLib/BootLogoLib.inf
 
-  SerialPortLib|HtcLeoPkg/Library/InMemorySerialPortLib/InMemorySerialPortLib.inf
   RealTimeClockLib|HtcLeoPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
   TimeBaseLib|EmbeddedPkg/Library/TimeBaseLib/TimeBaseLib.inf
 
@@ -75,18 +77,15 @@
 
   # Framebuffer
   FrameBufferBltLib|HtcLeoPkg/Library/FrameBufferBltLib/FrameBufferBltLib.inf
-  SerialPortLib|HtcLeoPkg/Library/FrameBufferSerialPortLib/FrameBufferSerialPortLib.inf
-  MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
+  MemoryInitPeiLib|ArmPlatformPkg/MemoryInitPei/MemoryInitPeiLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
   # Little kernel libraries
-  AdmLib|HtcLeoPkg/GPLLibrary/AdmLib/AdmLib.inf
   MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
   MsmPcomClientLib|HtcLeoPkg/Library/MsmPcomClientLib/MsmPcomClientLib.inf
   HtcLeoVibrationLib|HtcLeoPkg/GPLLibrary/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
 
   # SoC Drivers libraries
-  MsmTargetClockLib|HtcLeoPkg/GPLLibrary/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
@@ -98,8 +97,8 @@
   ExtractGuidedSectionLib|EmbeddedPkg/Library/PrePiExtractGuidedSectionLib/PrePiExtractGuidedSectionLib.inf
   HobLib|EmbeddedPkg/Library/PrePiHobLib/PrePiHobLib.inf
   MemoryAllocationLib|EmbeddedPkg/Library/PrePiMemoryAllocationLib/PrePiMemoryAllocationLib.inf
-  MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
-  PlatformPeiLib|HtcLeoPkg/Library/PlatformPeiLib/PlatformPeiLib.inf
+  MemoryInitPeiLib|ArmPlatformPkg/MemoryInitPei/MemoryInitPeiLib.inf
+  PlatformPeiLib|ArmPlatformPkg/PlatformPei/PlatformPeiLib.inf
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
 
 ################################################################################
@@ -119,6 +118,9 @@
   gEfiMdePkgTokenSpaceGuid.PcdDefaultTerminalType|4
 
   gEfiMdeModulePkgTokenSpaceGuid.PcdFirmwareVersionString|L"Testing"
+
+  # Memory protection
+  gEfiMdeModulePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x00000000
 
   # System Memory (576MB)
   gArmTokenSpaceGuid.PcdSystemMemoryBase|0x11800000
@@ -229,9 +231,9 @@
   MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
 
   # SoC Drivers
-  HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
+  HtcLeoPkg/GPLDrivers/ClockDxe/ClockDxe.inf
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
-  HtcLeoPkg/GPLDrivers/SdccDxe/SdccDxe.inf
+  HtcLeoPkg/GPLDrivers/SdCardDxe/SdCardDxe.inf
   HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
   HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
 

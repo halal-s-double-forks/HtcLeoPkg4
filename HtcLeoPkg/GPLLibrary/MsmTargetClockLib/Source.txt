@@ -1,2 +1,0 @@
-Based on:
-* https://github.com/n0d3/lk/tree/BlackCLK_ex_2/target/htcleo

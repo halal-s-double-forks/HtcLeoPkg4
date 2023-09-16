@@ -1,4 +1,0 @@
-Driver based on:
- - https://github.com/imbushuo/NintendoSwitchPkg/tree/master/Drivers/SdMmcDxe
- - https://github.com/sonic011gamer/Lumia520Pkg/tree/new/Driver/MMCHSDxe
- - https://github.com/n0d3/lk/blob/BlackCLK_ex_2/platform/qsd8k/mmc.c

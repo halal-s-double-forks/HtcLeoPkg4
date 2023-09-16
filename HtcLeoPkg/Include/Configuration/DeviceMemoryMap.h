@@ -64,25 +64,35 @@ typedef struct {
 #define UNCACHED_UNBUFFERED ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED
 #define UNCACHED_UNBUFFERED_XN ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED
 
+/* Unused, see map in HtcLeoPkgLib */
+
 static ARM_MEMORY_REGION_DESCRIPTOR_EX gDeviceMemoryDescriptorEx[] =
 {
   /* Name   Address, Length,  HobOption        ResourceAttribute    ArmAttributes  ResourceType          MemoryType */
 
   /* DDR Regions */
-  {"HLOS 0",            0x00000000, 0x00100000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
+  {"APPSBL",            0x00000000, 0x00100000, AddMem, MEM_RES, UNCACHEABLE,   Reserv,   UNCACHED_UNBUFFERED}, /* Probably shouldn't be hlos, check needed */
   {"SMEM",              0x00100000, 0x00100000, AddMem, MEM_RES, UNCACHEABLE,   Reserv, UNCACHED_UNBUFFERED},
   {"Reserved 1",        0x00200000, 0x02800000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
-  {"Display Reserved",  0x02A00000, 0x00C00000, AddMem, MEM_RES, WRITE_THROUGH, MaxMem, WRITE_THROUGH},
-  {"Reserved 2",        0x03600000, 0x0E200000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
-  {"HLOS 1",            0x11800000, 0x1A800000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
+  {"Display Reserved",  0x02A00000, 0x000C0000, AddMem, MEM_RES, WRITE_THROUGH, MaxMem, WRITE_THROUGH},
+  {"Reserved 2",        0x02AC0000, 0x0ED40000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},
+  {"HLOS 0",            0x11800000, 0x1A800000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
   {"UEFI FD",           0x2C000000, 0x00200000, AddMem, SYS_MEM, SYS_MEM_CAP,   BsCode, WRITE_BACK},
+#if USE_MEMORY_FOR_SERIAL_OUTPUT == 1
+  {"HLOS 1",            0x2C200000, 0x03C00000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
+  {"PStore",            0x2FE00000, 0x00200000, AddMem, MEM_RES, SYS_MEM_CAP,   Reserv, WRITE_THROUGH_XN},
+#else
   {"HLOS 1",            0x2C200000, 0x03E00000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
+#endif
 
   /* Peripheral regions */
+  {"GPU",               0xA0000000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
+  {"TSIF",              0xA0100000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
+  {"UART1_DM",          0xA0200000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
   {"SDC1",              0xA0300000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
-  {"SDC1",              0xA0400000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
-  {"SDC1",              0xA0500000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
-  {"SDC1",              0xA0600000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
+  {"SDC2",              0xA0400000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
+  {"SDC3",              0xA0500000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
+  {"SDC4",              0xA0600000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
   {"HSUSB",             0xA0800000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
   {"VFE",               0xA0F00000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
   {"SSBI",              0xA8100000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
@@ -103,6 +113,7 @@ static ARM_MEMORY_REGION_DESCRIPTOR_EX gDeviceMemoryDescriptorEx[] =
   {"CLK_CTL_SH2",       0xABA01000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
   {"VIC",               0xAC000000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
   {"CSR/GPT",           0xAC100000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
+  {"SIRC",              0xAC100000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE,   MmIO,   NS_DEVICE},
 
   /* Terminator for MMU */
   {"Terminator", 0, 0, 0, 0, 0, 0, 0}};

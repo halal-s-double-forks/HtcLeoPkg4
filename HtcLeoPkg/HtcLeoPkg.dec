@@ -43,8 +43,25 @@
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferVisibleWidth|480|UINT32|0x0000a404
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferVisibleHeight|800|UINT32|0x0000a405
 
+  # Memory serial
+  gHtcLeoPkgTokenSpaceGuid.PcdPstoreAddress|0x2FE00000|UINT32|0x0000a406
+  gHtcLeoPkgTokenSpaceGuid.PcdPstoreSize|0x200000|UINT32|0x0000a407
+
   # Timer
-  gHtcLeoPkgTokenSpaceGuid.PcdTimerFreqInHz|4800000|UINT32|0x0000a406
+  # GPT Timer
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmGptBase|0xAC100000|UINT32|0x0000a408
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmGptMatchValOffset|0x0000|UINT32|0x0000a409
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmGptCountValOffset|0x0004|UINT32|0x0000a40a
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmGptEnableOffset|0x0008|UINT32|0x0000a40b
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmGptClearOffset|0x000C|UINT32|0x0000a40c
+
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmDgtMatchValOffset|0x0010|UINT32|0x0000a40d
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmDgtEnableOffset|0x0018|UINT32|0x0000a40e
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmDgtClearOffset|0x001C|UINT32|0x0000a40f
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmGptVector|8|UINT32|0x0000a410
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmDgtTimerFreq|4800000|UINT32|0x0000a411
+
+  gHtcLeoPkgTokenSpaceGuid.PcdTimerFreqInHz|4800000|UINT32|0x0000a412
 
   # Interrupt Controller
-  gArmTokenSpaceGuid.PcdVicBase|0xAC000000|UINT32|0x0000a407
+  gArmTokenSpaceGuid.PcdVicBase|0xAC000000|UINT32|0x0000a413

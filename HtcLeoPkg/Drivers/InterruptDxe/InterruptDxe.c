@@ -66,26 +66,6 @@ VOID DeinitInterupts(VOID)
 }
 
 /**
-  Shutdown our hardware
-  
-  DXE Core will disable interrupts and turn off the timer and disable interrupts
-  after all the event handlers have run.
-
-  @param[in]  Event   The Event that is being processed
-  @param[in]  Context Event Context
-**/
-VOID
-EFIAPI
-ExitBootServicesEvent (
-  IN EFI_EVENT  Event,
-  IN VOID       *Context
-  )
-{
-  // Disable all interrupts
-  DeinitInterupts();
-}
-
-/**
   Register Handler for the specified interrupt source.
 
   @param This     Instance pointer for this protocol
@@ -186,6 +166,32 @@ DisableInterruptSource (
 	MmioWrite32(reg, bit);
   
   return EFI_SUCCESS;
+}
+
+/**
+  Shutdown our hardware
+  
+  DXE Core will disable interrupts and turn off the timer and disable interrupts
+  after all the event handlers have run.
+
+  @param[in]  Event   The Event that is being processed
+  @param[in]  Context Event Context
+**/
+VOID
+EFIAPI
+ExitBootServicesEvent (
+  IN EFI_EVENT  Event,
+  IN VOID       *Context
+  )
+{
+  UINTN Index;
+
+  // Mask all interrupts
+  for (Index = 0; Index < NR_IRQS; Index++) {
+    DisableInterruptSource(NULL, Index);
+  }
+  // Disable all interrupts
+  DeinitInterupts();
 }
 
 

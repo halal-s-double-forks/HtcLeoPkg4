@@ -33,7 +33,12 @@
 
 [Packages]
   MdePkg/MdePkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
 
 [LibraryClasses]
   CacheMaintenanceLib
+
+[FixedPcd]
+  gHtcLeoPkgTokenSpaceGuid.PcdPstoreAddress
+  gHtcLeoPkgTokenSpaceGuid.PcdPstoreSize
 

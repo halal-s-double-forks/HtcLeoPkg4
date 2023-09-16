@@ -14,6 +14,7 @@
 
 #include <Library/DebugLib.h>
 #include <Library/gpio.h>
+#include <Library/TimerLib.h>
 
 
 VOID EFIAPI htcleo_vibrate(unsigned enable){
@@ -22,7 +23,7 @@ VOID EFIAPI htcleo_vibrate(unsigned enable){
 
 VOID EFIAPI htcleo_vibrate_once(){
   htcleo_vibrate(1);
-  mdelay(100);
+  MicroSecondDelay(100);
   htcleo_vibrate(0);
 }
 

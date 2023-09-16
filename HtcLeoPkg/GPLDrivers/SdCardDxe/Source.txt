@@ -1,0 +1,3 @@
+Driver based on:
+ - https://github.com/n0d3/lk/blob/BlackCLK_ex_2/platform/qsd8k/mmc.c
+ - https://github.com/imbushuo/NintendoSwitchPkg/tree/master/Drivers/SdMmcDxe

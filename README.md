@@ -1,22 +1,32 @@
 # EDK2 UEFI Firmware For HTC HD2
-Attempt to create a normal EDK2 for HTC HD2.
 
 ## Status 
-* Boots to EFI Shell
-* SD card is working
-* Buttons are working
+
+| Function      | Notes                                   | status |
+|---------------|-----------------------------------------|--------|
+| GPIO          | Based on cLK driver                     |   ✅   |
+| SD Card       | Based on cLK driver, only reading works |   ✅   |
+| I2C           | Driver exists in cLK                    |   ❌   |
+| Panel         | Driver exists in cLK                    |   ❌   |
+| Charging      | Supported in cLK since 1.5.x            |   ❌   |
+| Battery Gauge | Supported in cLK since 1.5.x (needs i2c)|   ❌   |
+| Keypad        | Loosely based on cLK driver             |   ✅   |
+
+## Loading
+UEFI can be either chainloaded as a kernel from cLK, as well as flashed to boot directly from HSPL.
 
 ## To-Do
-Get to load ReactOS /s
+Test/fix loading linux
+Get to load ReactOS
 
 ## Credits
- - sonic011gamer for creating msm8909Pkg
- - imbushuo for creating PrimeG2Pkg and also for the framebuffer patch
+ - Cotulla and DFT for the work on HD2
+ - cedesmith for creating the lk port for Leo, kokotas on further work
+ - n0d3 for the sdcard driver in cLK
+ - imbushuo for creating PrimeG2Pkg
+ - ivoszbg for Msm8916Pkg
  - winocm for the iPhone4Pkg
- - cedesmith and others for creating the lk port for Leo
- - n0d3 for the work on the sdcard driver in lk
 
 ## License
-All code except drivers in `GPLDrivers` and libraries in `GPLLibrary` directory is licensed under BSD 2-Clause. 
+All code except drivers in `GplDrivers` directory is licensed under BSD 2-Clause. 
 GPL Drivers are licensed under GPLv2 license.
-

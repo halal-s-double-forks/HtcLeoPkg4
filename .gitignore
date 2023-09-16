@@ -1,4 +1,7 @@
 BootShim/BootShim.bin
-ImageResources/bootpayload.bin
+ImageResources/Tools/*.bin
+ImageResources/Tools/*.nbh
+ImageResources/Tools/*.nb
+ImageResources/Tools/*.bin
 ImageResources/uefi.img
 workspace/Build/
