@@ -190,6 +190,7 @@ APRIORI DXE {
 !ifdef $(INCLUDE_TFTP_COMMAND)
   INF ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf
 !endif #$(INCLUDE_TFTP_COMMAND)
+  INF HtcLeoPkg/Application/TetrisApp/tetris.inf
 
   #
   # Bds
