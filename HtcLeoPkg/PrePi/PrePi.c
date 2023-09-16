@@ -39,6 +39,22 @@ PainScreen(
 }
 
 VOID
+ReadInfo()
+{
+  UINT32  BootReason;
+  UINT32  SplBootReason;
+
+  // Read the boot reason
+  BootReason = MmioRead32(LK_BOOTREASON_ADDR);
+  DEBUG((EFI_D_ERROR, "LK bootreason: %d\n", BootReason));
+
+  SplBootReason = MmioRead32(SPL_BOOT_REASON_ADDR);
+  DEBUG((EFI_D_ERROR, "SPL bootreason: %d\n", SplBootReason));
+
+  for (;;) {};
+}
+
+VOID
 PrePiMain (
   IN  UINTN   UefiMemoryBase,
   IN  UINTN   StacksBase,
@@ -102,6 +118,8 @@ PrePiMain (
         UefiMemoryBase,
         StacksBase
     ));
+
+  ReadInfo();
 
   // Initialize the Debug Agent for Source Level Debugging
   InitializeDebugAgent (DEBUG_AGENT_INIT_POSTMEM_SEC, NULL, NULL);
