@@ -12,7 +12,7 @@ typedef struct {
 	int x, y;
 } Point;
 
-void putcharx( IN int x, IN int y, IN CHAR16 ch );
-BOOLEAN isAlphanumeric( IN CHAR16 ch );
-void setCursorPos( int x, int y );
-void setTextColor( UINT8 color );
+void PutCharX( IN int x, IN int y, IN CHAR16 ch );
+BOOLEAN IsAlphanumeric( IN CHAR16 ch );
+void SetCursorPos( int x, int y );
+void SetTextColor( UINT8 color );

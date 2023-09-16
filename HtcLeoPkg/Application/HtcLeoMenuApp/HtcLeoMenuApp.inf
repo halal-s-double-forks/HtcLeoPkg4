@@ -12,15 +12,12 @@
 [Sources]
   menu.c
   CommonHeader.c
-  sdtools.c
 
 [Packages]
   MdePkg/MdePkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   HtcLeoPkg/HtcLeoPkg.dec
-
-    
   
 [LibraryClasses]
   UefiApplicationEntryPoint
@@ -32,5 +29,5 @@
   ResetSystemLib
   UefiBootManagerLib
 
-  [Protocols]
+[Protocols]
   gEfiLoadedImageProtocolGuid

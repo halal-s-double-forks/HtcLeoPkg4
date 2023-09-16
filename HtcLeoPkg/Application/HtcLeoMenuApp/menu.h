@@ -4,39 +4,36 @@
 #include <Library/DebugLib.h>
 
 typedef struct {
-  UINT8   index;
-  CHAR16 *name;
-  BOOLEAN isActive;
-  void (*function)();
+  UINT8   Index;
+  CHAR16 *Name;
+  BOOLEAN IsActive;
+  void (*Function)();
 } MenuEntry;
 
-void option1Function(
+void Option1Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void rebootMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void option2Function(
+void RebootMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void Option2Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void exitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void startTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void prepareConsole(
-    IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
-    OUT EFI_SIMPLE_TEXT_OUTPUT_MODE    *modeToStore);
-void restoreInitialConsoleMode(
-    IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *cout,
-    IN EFI_SIMPLE_TEXT_OUTPUT_MODE     *storedMode);
+void ExitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void StartTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void PrepareConsole(
+    IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *Cout,
+    OUT EFI_SIMPLE_TEXT_OUTPUT_MODE    *ModeToStore);
+void RestoreInitialConsoleMode(
+    IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *Cout,
+    IN EFI_SIMPLE_TEXT_OUTPUT_MODE     *StoredMode);
 void HandleKeyInput(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 
 EFI_STATUS StartAnotherApp(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable,
     IN EFI_GUID *AppGuid);
-void drawMenu(IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *consoleOut);
+void DrawMenu(IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConsoleOut);
 
-void  nullfunction();
-UINTN getActiveMenuEntryLength();
-void returnToMainMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void shutdownWrapper(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void rebootWrapper(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
-void enterBootMGR(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void  NullFunction();
+UINTN GetActiveMenuEntryLength();
+void ReturnToMainMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void EnterBootMgr(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 
 #endif
