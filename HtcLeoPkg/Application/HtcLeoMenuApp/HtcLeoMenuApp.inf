@@ -1,7 +1,7 @@
 [Defines] 
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = HtcLeoMenuApp
-  FILE_GUID                      = C2FD4B72-F4AF-41F1-BC67-AD4AE0D43323
+  FILE_GUID                      = 462CAA21-7614-4503-836E-8AB6F4662331 # UiApp GUID
   MODULE_TYPE                    = UEFI_APPLICATION 
   VERSION_STRING                 = 0.1 
   ENTRY_POINT                    = ShellAppMain

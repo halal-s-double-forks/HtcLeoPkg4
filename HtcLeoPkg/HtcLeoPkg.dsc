@@ -270,6 +270,10 @@
   EmbeddedPkg/Application/AndroidFastboot/AndroidFastbootApp.inf
 
     HtcLeoPkg/Application/TetrisApp/tetris.inf
+    HtcLeoPkg/Application/TetrisApp/tetris.inf
+    HtcLeoPkg/Application/HtcLeoMenuApp/HtcLeoMenuApp.inf
+
+  HtcLeoPkg/Application/TetrisApp/tetris.inf
     HtcLeoPkg/Application/HtcLeoMenuApp/HtcLeoMenuApp.inf
 
 
@@ -309,13 +313,7 @@
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/DriverHealthManagerDxe/DriverHealthManagerDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
-  MdeModulePkg/Application/UiApp/UiApp.inf {
-    <LibraryClasses>
-      NULL|MdeModulePkg/Library/DeviceManagerUiLib/DeviceManagerUiLib.inf
-      NULL|MdeModulePkg/Library/BootManagerUiLib/BootManagerUiLib.inf
-      NULL|MdeModulePkg/Library/BootMaintenanceManagerUiLib/BootMaintenanceManagerUiLib.inf
-      PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
-  }
+  HtcLeoPkg/Application/HtcLeoMenuApp/HtcLeoMenuApp.inf
   ShellPkg/Application/Shell/Shell.inf {
     <LibraryClasses>
       ShellCommandLib|ShellPkg/Library/UefiShellCommandLib/UefiShellCommandLib.inf
