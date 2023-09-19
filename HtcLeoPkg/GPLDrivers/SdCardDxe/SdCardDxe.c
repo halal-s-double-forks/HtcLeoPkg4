@@ -461,8 +461,8 @@ static int check_clear_read_status(void)
 
 static int check_clear_write_status(void)
 {
-	uint32_t mci_status;
-	uint8_t  data_block_end;
+	UINT32 mci_status;
+	UINT8  data_block_end;
 
 	// Check status
 	do {
@@ -806,7 +806,7 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 	while (byte_count < BLOCK_SIZE)	{
 		mci_status = MmioRead32(sdcn.base + MCI_STATUS);
 		if ((mci_status & MCI_STATUS__TXFIFO_FULL___M) == 0) {
-			writel(*write_buffer, sdcn.base + MCI_FIFO);
+			MmioWrite32(sdcn.base + MCI_FIFO, *write_buffer);
 			write_buffer++;
 			byte_count += 4;
 		}
