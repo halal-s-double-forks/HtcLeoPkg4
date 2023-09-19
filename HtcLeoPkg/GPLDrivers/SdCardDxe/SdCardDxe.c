@@ -883,7 +883,7 @@ mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
 {
 	SIGNATURE_32('s', 'd', 'c', 'c'),         // MediaId
-	FALSE,                                    // RemovableMedia
+	TRUE,                                    // RemovableMedia
 	TRUE,                                     // MediaPresent
 	FALSE,                                    // LogicalPartition
 	FALSE,                                    // ReadOnly
