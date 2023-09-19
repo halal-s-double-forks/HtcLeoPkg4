@@ -458,6 +458,47 @@ static int check_clear_read_status(void)
 	return(1);
 }
 
+static int check_clear_write_status(void)
+{
+	uint32_t mci_status;
+	uint8_t  data_block_end;
+
+	// Check status
+	do {
+		mci_status = MmioRead32(sdcn.base + MCI_STATUS);
+		data_block_end = (mci_status & MCI_STATUS__DATA_BLK_END___M) >> MCI_STATUS__DATA_BLK_END___S;
+		
+		//data_crc_fail
+		if ((mci_status & MCI_STATUS__DATA_CRC_FAIL___M) >> MCI_STATUS__DATA_CRC_FAIL___S)
+			return(0);
+			
+		//data_timeout
+		if ((mci_status & MCI_STATUS__DATA_TIMEOUT___M) >> MCI_STATUS__DATA_TIMEOUT___S)
+			return(0);
+			
+		//tx_underrun
+		if ((mci_status & MCI_STATUS__TX_UNDERRUN___M) >> MCI_STATUS__TX_UNDERRUN___S)	
+			return(0);
+			
+		//start_bit_err
+		if ((mci_status & MCI_STATUS__START_BIT_ERR___M) >> MCI_STATUS__START_BIT_ERR___S)
+			return(0);
+	}while(!data_block_end);
+
+	// Clear
+	MmioWrite32(sdcn.base + MCI_CLEAR, MCI_CLEAR__DATA_BLK_END_CLR___M);
+
+	MmioWrite32(sdcn.base + MCI_CLEAR, MCI_CLEAR__DATA_CRC_FAIL_CLR___M | MCI_CLEAR__DATA_TIMEOUT_CLR___M | MCI_CLEAR__TX_UNDERRUN_CLR___M);
+
+	while(!(MmioRead32(sdcn.base + MCI_STATUS) & MCI_STATUS__DATAEND___M));
+	MmioWrite32(sdcn.base + MCI_CLEAR, MCI_CLEAR__DATA_END_CLR___M);
+
+	while(MmioRead32(sdcn.base + MCI_STATUS) & MCI_STATUS__DATAEND___M);
+	MmioWrite32(sdcn.base + MCI_CLEAR, MCI_CLEAR__DATA_BLK_END_CLR___M);
+
+	return(1);
+}
+
 static int read_SD_status(UINT16 rca)
 {
 	UINT16 cmd;
@@ -737,6 +778,62 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 	return(1);
 }
 
+static int write_a_block(uint32_t block_number, uint32_t write_buffer[], uint16_t rca)
+{
+	uint16_t cmd, byte_count;
+	uint32_t mci_status, response[4];
+	uint32_t address;
+
+	if (high_capacity == 0)
+		address = block_number * BLOCK_SIZE;
+	else
+		address = block_number;
+
+	// Set timeout and data length
+	MmioWrite32(sdcn.base + MCI_DATA_TIMER, WR_DATA_TIMEOUT);
+	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, BLOCK_SIZE);
+
+	// Send WRITE_BLOCK command
+	cmd = CMD24 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+	if (!mmc_send_cmd(cmd, address, response))
+		return(0);
+
+	// Write data control register
+	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S));
+
+	// Write the block
+	byte_count = 0;
+	while (byte_count < BLOCK_SIZE)	{
+		mci_status = MmioRead32(sdcn.base + MCI_STATUS);
+		if ((mci_status & MCI_STATUS__TXFIFO_FULL___M) == 0) {
+			writel(*write_buffer, sdcn.base + MCI_FIFO);
+			write_buffer++;
+			byte_count += 4;
+		}
+
+		if (mci_status &
+		   (MCI_STATUS__CMD_CRC_FAIL___M | MCI_STATUS__DATA_TIMEOUT___M | MCI_STATUS__TX_UNDERRUN___M))
+			return(0);
+	}
+
+	if (!check_clear_write_status())
+		return(0);
+
+	// Send SEND_STATUS command (with PROG_ENA, can poll on PROG_DONE below)
+	cmd = CMD13 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M | MCI_CMD__PROG_ENA___M;
+	if (!mmc_send_cmd(cmd, (rca << 16), response))
+		return(0);
+
+	// Wait for PROG_DONE
+	while(!(MmioRead32(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M));
+
+	// Clear PROG_DONE and wait until cleared
+	MmioWrite32(sdcn.base + MCI_CLEAR, MCI_CLEAR__PROG_DONE_CLR___M);
+	while(MmioRead32(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M);
+
+	return(1);
+}
+
 UINTN
 mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 {
@@ -746,6 +843,28 @@ mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 	do {
 		cur = 1;
 		if (!read_a_block(start, dst))
+		{
+			DEBUG((EFI_D_ERROR, "%s: Failed to read blocks\n", __func__));
+			return 0;
+		}
+		blocks_todo -= cur;
+		start += cur;
+		dst += cur * 512;
+	} 
+	while (blocks_todo > 0);
+
+	return blkcnt;
+}
+
+UINTN
+mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
+{
+	int err;
+	UINT32 cur, blocks_todo = blkcnt;
+
+	do {
+		cur = 1;
+		if (!write_a_block(start, dst))
 		{
 			DEBUG((EFI_D_ERROR, "%s: Failed to read blocks\n", __func__));
 			return 0;
@@ -1004,6 +1123,57 @@ MMCHSReadBlocks(
 	return Status;
 }
 
+/*
+ * Function: MmcWriteInternal
+ * Arg     : Data address on card, o/p buffer & data length
+ * Return  : 0 on Success, non zero on failure
+ * Flow    : Write data from out to the card
+ */
+STATIC UINT32 MmcWriteInternal
+(
+    UINT32 DataAddr, 
+    UINT32 *Buf, 
+    UINT32 DataLen
+)
+{
+    UINT32 Ret = 0;
+    UINT32 BlockSize = gMMCHSMedia.BlockSize;
+    UINT32 ReadSize;
+    UINT8 *Sptr = (UINT8 *) Buf;
+
+    ASSERT(!(DataAddr % BlockSize));
+    ASSERT(!(DataLen % BlockSize));
+
+    WriteBackInvalidateDataCacheRange(Buf, DataLen);
+
+    // Set size 
+    ReadSize = BlockSize;
+
+    while (DataLen > ReadSize) 
+    {
+        Ret = mmc_bwrite((DataAddr / BlockSize), (ReadSize / BlockSize), (VOID *) Sptr);
+        if (Ret == 0)
+        {
+            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / BlockSize)));
+            return 0;
+        }
+        Sptr += ReadSize;
+        DataAddr += ReadSize;
+        DataLen -= ReadSize;
+    }
+
+    if (DataLen)
+    {
+        Ret = mmc_bwrite((DataAddr / BlockSize), (DataLen / BlockSize), (VOID *) Sptr);
+        if (Ret == 0)
+        {
+            DEBUG((EFI_D_ERROR, "Failed writing block @ %x\n",(UINTN) (DataAddr / BlockSize)));
+            return 1;
+        }
+    }
+
+    return 1;
+}
 
 /**
 
@@ -1036,10 +1206,41 @@ MMCHSWriteBlocks(
 )
 {
 	EFI_STATUS Status = EFI_SUCCESS;
-	EFI_TPL    OldTpl;
-	INT32      ret;
+	UINTN      ret;
 
-	/* TBD */
+	if (BufferSize % gMMCHSMedia.BlockSize != 0) 
+    {
+		DEBUG((EFI_D_ERROR, "MMCHSWriteBlocks: BAD buffer!!!\n"));
+    	MicroSecondDelay(5000);
+        return EFI_BAD_BUFFER_SIZE;
+    }
+
+	if (Buffer == NULL) 
+    {
+		DEBUG((EFI_D_ERROR, "MMCHSWriteBlocks: Invalid parameter!!!\n"));
+    	MicroSecondDelay(5000);
+        return EFI_INVALID_PARAMETER;
+    }
+
+	if (BufferSize == 0) 
+    {
+		DEBUG((EFI_D_ERROR, "MMCHSWriteBlocks: BufferSize = 0\n"));
+    	MicroSecondDelay(5000);
+        return EFI_SUCCESS;
+    }
+
+	ret = MmcWriteInternal((UINT64) Lba * 512, Buffer, BufferSize);
+	
+	if (ret == 1)
+    {
+        return EFI_SUCCESS;
+    }
+    else
+    {
+        DEBUG((EFI_D_ERROR, "MMCHSWriteBlocks: Write error!\n"));
+        MicroSecondDelay(5000);
+        return EFI_DEVICE_ERROR;
+    }
 	
 	return Status;
 }
