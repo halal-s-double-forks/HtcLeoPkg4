@@ -50,6 +50,7 @@ struct sd_parms sdcn;
 static int high_capacity = 0;
 int scr_valid = 0;
 UINT32 scr[2];
+UINT16 rca;
 
 /* Function prototype */
 static void mmc_decode_csd(UINT32 * resp);
@@ -668,7 +669,6 @@ SdCardInit()
 {
     UINT32 cid[4] = {0};
     UINT32 csd[4] = {0};
-    UINT16 rca;
     UINT8  dummy;
     UINT32 buffer[128];
     UINT32 temp32;
@@ -778,11 +778,11 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 	return(1);
 }
 
-static int write_a_block(uint32_t block_number, uint32_t write_buffer[], uint16_t rca)
+static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 {
-	uint16_t cmd, byte_count;
-	uint32_t mci_status, response[4];
-	uint32_t address;
+	UINT16 cmd, byte_count;
+	UINT32 mci_status, response[4];
+	UINT32 address;
 
 	if (high_capacity == 0)
 		address = block_number * BLOCK_SIZE;
@@ -864,7 +864,7 @@ mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 
 	do {
 		cur = 1;
-		if (!write_a_block(start, dst))
+		if (!write_a_block(start, dst, rca))
 		{
 			DEBUG((EFI_D_ERROR, "%s: Failed to read blocks\n", __func__));
 			return 0;
