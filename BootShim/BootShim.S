@@ -69,8 +69,8 @@ reset:
 	/* do some cpu setup */
 	mrc	p15, 0, r0, c1, c0, 0
 	/* XXX this is currently for arm926, revist with armv6 cores */
-	/* new thumb behavior, low exception vectors, i/d cache disable, mmu disabled */
-	bic	r0, r0, #(1<<15| 1<<13 | 1<<12)
+	/* new thumb behavior, low exception vectors, i/d cache disable */
+	bic	r0, r0, #(1<<15| 1<<13)
 	bic	r0, r0, #(1<<2 | 1<<0)
 
 	// From PrimeG2Pkg
