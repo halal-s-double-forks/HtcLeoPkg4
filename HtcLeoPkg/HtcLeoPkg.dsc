@@ -86,6 +86,9 @@
   HtcLeoVibrationLib|HtcLeoPkg/GPLLibrary/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
 
   # SoC Drivers libraries
+  StrLib|HtcLeoPkg/Library/StrLib/StrLib.inf
+  PTableLib|HtcLeoPkg/Library/PTableLib/PTableLib.inf
+  SmemLib|HtcLeoPkg/Drivers/SmemDxe/SmemImplLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
@@ -232,6 +235,8 @@
 
   # SoC Drivers
   HtcLeoPkg/GPLDrivers/ClockDxe/ClockDxe.inf
+  HtcLeoPkg/Drivers/SmemDxe/SmemDxe.inf
+  HtcLeoPkg/Drivers/SmemPtableDxe/SmemPtableDxe.inf
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
   HtcLeoPkg/GPLDrivers/SdCardDxe/SdCardDxe.inf
   HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
