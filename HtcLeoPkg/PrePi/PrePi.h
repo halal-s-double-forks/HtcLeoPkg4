@@ -23,26 +23,16 @@
 
 extern UINT64  mSystemMemoryEnd;
 
-/* some RGB color definitions                                                 */
-#define Black           0x0000      /*   0,   0,   0 */
-#define Navy            0x000F      /*   0,   0, 128 */
-#define DarkGreen       0x03E0      /*   0, 128,   0 */
-#define DarkCyan        0x03EF      /*   0, 128, 128 */
-#define Maroon          0x7800      /* 128,   0,   0 */
-#define Purple          0x780F      /* 128,   0, 128 */
-#define Olive           0x7BE0      /* 128, 128,   0 */
-#define LightGrey       0xC618      /* 192, 192, 192 */
-#define DarkGrey        0x7BEF      /* 128, 128, 128 */
-#define Blue            0x001F      /*   0,   0, 255 */
-#define Green           0x07E0      /*   0, 255,   0 */
-#define Cyan            0x07FF      /*   0, 255, 255 */
-#define Red             0xF800      /* 255,   0,   0 */
-#define Magenta         0xF81F      /* 255,   0, 255 */
-#define Yellow          0xFFE0      /* 255, 255,   0 */
-#define White           0xFFFF      /* 255, 255, 255 */
-#define Orange          0xFD20      /* 255, 165,   0 */
-#define GreenYellow     0xAFE5      /* 173, 255,  47 */
-#define Pink            0xF81F
+/* some BGRA8888 color definitions */
+#define FB_BGRA8888_BLACK 0xff000000
+#define FB_BGRA8888_WHITE 0xffffffff
+#define FB_BGRA8888_CYAN 0xff00ffff
+#define FB_BGRA8888_BLUE 0xff0000ff
+#define FB_BGRA8888_SILVER 0xffc0c0c0
+#define FB_BGRA8888_YELLOW 0xffffff00
+#define FB_BGRA8888_ORANGE 0xffffa500
+#define FB_BGRA8888_RED 0xffff0000
+#define FB_BGRA8888_GREEN 0xff00ff00
 
 /* MDP-related defines */
 #define MSM_MDP_BASE1 	0xAA200000

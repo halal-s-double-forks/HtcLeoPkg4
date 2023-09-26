@@ -64,8 +64,11 @@ PrePiMain (
   // Initialize the architecture specific bits
   ArchInitialize ();
 
+  // Reconfigure the framebuffer to 32bpp BGRA8888
+  ReconfigFb();
+
   // Paint the screen to black
-  PainScreen(Black);
+  PainScreen(FB_BGRA8888_BLACK);
 
   // There are still a few things to do
   /* enable cp10 and cp11 */
@@ -92,8 +95,6 @@ PrePiMain (
 	/* enable cycle counter */
 	en = (1<<31);
 	__asm__ volatile("mcr	p15, 0, %0, c9, c12, 1" :: "r" (en));
-
-  ReconfigFb();
 
   // Initialize the Serial Port
   SerialPortInitialize ();
