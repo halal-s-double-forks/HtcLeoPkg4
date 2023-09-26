@@ -39,6 +39,15 @@ PainScreen(
 }
 
 VOID
+ReconfigFb()
+{
+  // Format (32bpp)
+  MmioWrite32(MDP_DMA_P_CONFIG, DMA_PACK_ALIGN_LSB|DMA_PACK_PATTERN_RGB|DMA_DITHER_EN|DMA_OUT_SEL_LCDC|DMA_IBUF_FORMAT_xRGB8888_OR_ARGB8888|DMA_DSTC0G_8BITS|DMA_DSTC1B_8BITS|DMA_DSTC2R_8BITS);
+  // Stride
+  MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, 4 * 480);
+}
+
+VOID
 PrePiMain (
   IN  UINTN   UefiMemoryBase,
   IN  UINTN   StacksBase,
@@ -83,6 +92,8 @@ PrePiMain (
 	/* enable cycle counter */
 	en = (1<<31);
 	__asm__ volatile("mcr	p15, 0, %0, c9, c12, 1" :: "r" (en));
+
+  ReconfigFb();
 
   // Initialize the Serial Port
   SerialPortInitialize ();
