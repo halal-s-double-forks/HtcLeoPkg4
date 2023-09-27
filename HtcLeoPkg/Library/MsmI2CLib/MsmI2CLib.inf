@@ -6,14 +6,13 @@
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = MsmI2cLib
-  CONSTRUCTOR                    = I2cLibInitialize
+  CONSTRUCTOR                    = MsmI2cInitialize
  # VALID_ARCHITECTURES            = ARM
 
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-incompatible-pointer-types -Wno-implicit-function-declaration
 
 [Sources.common]
-  MsmI2cLib.c
   msm_i2c.c
 
 [LibraryClasses]
@@ -24,7 +23,6 @@
   UefiBootServicesTableLib
   MsmTargetGpioLib
   MsmPcomLib
-  InterruptsLib
 
 [Packages]
   ArmPkg/ArmPkg.dec

@@ -14,6 +14,7 @@
  *
  */
 
+#include <Library/ArmLib.h>
 #include <Library/IoLib.h>
 #include <Library/BaseLib.h>
 #include <Uefi.h>
@@ -33,9 +34,14 @@
 #include <Chipset/timer.h>
 #include <Chipset/clock.h>
 
+#include <Protocol/HardwareInterrupt.h>
 #include <Protocol/EmbeddedClock.h>
 
-EMBEDDED_CLOCK_PROTOCOL  *gClock;
+#include <Chipset/gpio.h>
+#include <Chipset/irqs.h>
+
+EMBEDDED_CLOCK_PROTOCOL  *gClock = NULL;
+EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
 #define DEBUG_I2C 0
 
@@ -238,12 +244,18 @@ out_err:
 	timeout = ERR_TIMED_OUT;
 }
 
-static enum handler_return msm_i2c_isr(void *arg) {
+/*static enum handler_return msm_i2c_isr(void *arg) {
 	//enter_critical_section();
 	msm_i2c_interrupt_locked();
 	//exit_critical_section();
 	
 	return INT_RESCHEDULE;
+}*/
+
+void
+msm_i2c_isr()
+{
+	msm_i2c_interrupt_locked();
 }
 
 static int msm_i2c_poll_notbusy(int warn)
@@ -336,7 +348,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	int ret, ret_wait;
 
 	gClock->ClkEnable(dev.pdata->clk_nr);
-	unmask_interrupt(dev.pdata->irq_nr);
+	gInterrupt->EnableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 
 	ret = msm_i2c_poll_notbusy(1);
 
@@ -407,7 +419,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 		msm_i2c_recover_bus_busy();
 	} */
 err:
-	mask_interrupt(dev.pdata->irq_nr);
+	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 	gClock->ClkDisable(dev.pdata->clk_nr);
 	
 	return ret;
@@ -476,8 +488,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 
 	dev.pdata = pdata;
 	
-	//enter_critical_section();
-	mask_interrupt(dev.pdata->irq_nr);
+	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	gClock->ClkEnable(dev.pdata->clk_nr);
 	
@@ -496,9 +507,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 
 	gClock->ClkDisable(dev.pdata->clk_nr);
-	register_int_handler(dev.pdata->irq_nr, msm_i2c_isr, NULL);
-	unmask_interrupt(dev.pdata->irq_nr);
-	//exit_critical_section();
+	gInterrupt->RegisterInterruptSource(gInterrupt, dev.pdata->irq_nr, msm_i2c_isr);
 
 	return 0;
 }
@@ -508,22 +517,49 @@ void msm_i2c_remove() {
 		return;//if driver is not installed
 		
 	//enter_critical_section();
-	mask_interrupt(dev.pdata->irq_nr);
+	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 	gClock->ClkDisable(dev.pdata->clk_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	dev.pdata = NULL;
 	//exit_critical_section();
 }
 
+void
+msm_set_i2c_mux(int mux_to_i2c) {
+	if (mux_to_i2c) {
+		pcom_gpio_tlmm_config(MSM_GPIO_CFG(GPIO_I2C_CLK, 0, MSM_GPIO_CFG_OUTPUT, MSM_GPIO_CFG_NO_PULL, MSM_GPIO_CFG_8MA), 0);
+		pcom_gpio_tlmm_config(MSM_GPIO_CFG(GPIO_I2C_DAT, 0, MSM_GPIO_CFG_OUTPUT, MSM_GPIO_CFG_NO_PULL, MSM_GPIO_CFG_8MA), 0);
+	} else {
+		pcom_gpio_tlmm_config(MSM_GPIO_CFG(GPIO_I2C_CLK, 1, MSM_GPIO_CFG_INPUT, MSM_GPIO_CFG_NO_PULL, MSM_GPIO_CFG_2MA), 0);
+		pcom_gpio_tlmm_config(MSM_GPIO_CFG(GPIO_I2C_DAT, 1, MSM_GPIO_CFG_INPUT, MSM_GPIO_CFG_NO_PULL, MSM_GPIO_CFG_2MA), 0);
+	}
+}
+
+static struct msm_i2c_pdata i2c_pdata = {
+	.i2c_clock = 400000,
+	.clk_nr	= I2C_CLK,
+	.irq_nr = INT_PWB_I2C,
+	.scl_gpio = GPIO_I2C_CLK,
+	.sda_gpio = GPIO_I2C_DAT,
+	.set_mux_to_i2c = &msm_set_i2c_mux,
+	.i2c_base = (void*)MSM_I2C_BASE,
+};
+
 RETURN_STATUS
 EFIAPI
-I2cLibInitialize(VOID)
+MsmI2cInitialize(VOID)
 {
   EFI_STATUS Status = EFI_SUCCESS;
+
+  // Find the interrupt controller protocol.  ASSERT if not found.
+  Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
+  ASSERT_EFI_ERROR (Status);
 
   // Find the clock controller protocol.  ASSERT if not found.
   Status = gBS->LocateProtocol (&gEmbeddedClockProtocolGuid, NULL, (VOID **)&gClock);
   ASSERT_EFI_ERROR (Status);
+
+  msm_i2c_probe(&i2c_pdata);
 
   return Status;
 }
