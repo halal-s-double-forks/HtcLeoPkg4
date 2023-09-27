@@ -18,6 +18,7 @@
 #include <Library/BaseLib.h>
 #include <Uefi.h>
 #include <Library/DebugLib.h>
+#include <Library/UefiBootServicesTableLib.h>
 
 #include <Library/pcom.h>
 #include <Library/gpio.h>
@@ -31,6 +32,10 @@
 #include <Chipset/iomap.h>
 #include <Chipset/timer.h>
 #include <Chipset/clock.h>
+
+#include <Protocol/EmbeddedClock.h>
+
+EMBEDDED_CLOCK_PROTOCOL  *gClock;
 
 #define DEBUG_I2C 0
 
@@ -330,7 +335,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 {
 	int ret, ret_wait;
 
-	clk_enable(dev.pdata->clk_nr);
+	gClock->ClkEnable(dev.pdata->clk_nr);
 	unmask_interrupt(dev.pdata->irq_nr);
 
 	ret = msm_i2c_poll_notbusy(1);
@@ -403,7 +408,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	} */
 err:
 	mask_interrupt(dev.pdata->irq_nr);
-	clk_disable(dev.pdata->clk_nr);
+	gClock->ClkDisable(dev.pdata->clk_nr);
 	
 	return ret;
 }
@@ -474,7 +479,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	//enter_critical_section();
 	mask_interrupt(dev.pdata->irq_nr);
 	dev.pdata->set_mux_to_i2c(0);
-	clk_enable(dev.pdata->clk_nr);
+	gClock->ClkEnable(dev.pdata->clk_nr);
 	
 	int i2c_clk 	= 19200000;
 	int target_clk 	= 100000;
@@ -490,7 +495,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 
-	clk_disable(dev.pdata->clk_nr);
+	gClock->ClkDisable(dev.pdata->clk_nr);
 	register_int_handler(dev.pdata->irq_nr, msm_i2c_isr, NULL);
 	unmask_interrupt(dev.pdata->irq_nr);
 	//exit_critical_section();
@@ -504,8 +509,22 @@ void msm_i2c_remove() {
 		
 	//enter_critical_section();
 	mask_interrupt(dev.pdata->irq_nr);
-	clk_disable(dev.pdata->clk_nr);
+	gClock->ClkDisable(dev.pdata->clk_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	dev.pdata = NULL;
 	//exit_critical_section();
 }
+
+RETURN_STATUS
+EFIAPI
+I2cLibInitialize(VOID)
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  // Find the clock controller protocol.  ASSERT if not found.
+  Status = gBS->LocateProtocol (&gEmbeddedClockProtocolGuid, NULL, (VOID **)&gClock);
+  ASSERT_EFI_ERROR (Status);
+
+  return Status;
+}
+	

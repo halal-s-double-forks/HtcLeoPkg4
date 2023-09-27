@@ -298,6 +298,9 @@ ClockDxeInitialize(
 	IN EFI_SYSTEM_TABLE   *SystemTable
 )
 {
+	EFI_STATUS  Status = EFI_SUCCESS;
+  	EFI_HANDLE       Handle;
+	
 	//
 	// Make sure the Gpio protocol has not been installed in the system yet.
 	//

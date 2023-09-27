@@ -6,6 +6,7 @@
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = MsmI2cLib
+  CONSTRUCTOR                    = I2cLibInitialize
  # VALID_ARCHITECTURES            = ARM
 
 [BuildOptions.ARM]
@@ -20,7 +21,7 @@
   IoLib
   TimerLib
   ArmLib
-
+  UefiBootServicesTableLib
   MsmTargetGpioLib
   MsmPcomLib
   InterruptsLib
@@ -31,3 +32,5 @@
   MdePkg/MdePkg.dec
   HtcLeoPkg/HtcLeoPkg.dec
 
+[Protocols]
+  gEmbeddedClockProtocolGuid
