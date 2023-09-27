@@ -78,6 +78,9 @@
 #define PS_PWR_ON				(1<<0)
 #define LS_PWR_ON				(1<<1)
 
+// Specific defines from board_htcleo.h
+#define HTCLEO_GPIO_UP_RESET_N		91
+
 struct microp_platform_data {
 	int chip;
 	uint32_t gpio_reset;
