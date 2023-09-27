@@ -234,9 +234,9 @@ out_err:
 }
 
 static enum handler_return msm_i2c_isr(void *arg) {
-	enter_critical_section();
+	//enter_critical_section();
 	msm_i2c_interrupt_locked();
-	exit_critical_section();
+	//exit_critical_section();
 	
 	return INT_RESCHEDULE;
 }
@@ -341,7 +341,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 			goto err;
 	}
 
-	enter_critical_section();
+	//enter_critical_section();
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 	}
@@ -353,7 +353,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.flush_cnt = 0;
 	dev.cnt = msgs->len;
 	msm_i2c_interrupt_locked();
-	exit_critical_section();
+	//exit_critical_section();
 
 	/*
 	 * Now that we've setup the xfer, the ISR will transfer the data
@@ -361,7 +361,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	 */
 	ret_wait = msm_i2c_poll_notbusy(0); /* Read may not have stopped in time */
 	
-	enter_critical_section();
+	//enter_critical_section();
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 	}
@@ -372,7 +372,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.ret = 0;
 	dev.flush_cnt = 0;
 	dev.cnt = 0;
-	exit_critical_section();
+	//exit_critical_section();
 
 	if (ret_wait) {
 		I2C_DBG(DEBUGLEVEL, "Still busy after xfer completion\n");
@@ -471,7 +471,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 
 	dev.pdata = pdata;
 	
-	enter_critical_section();
+	//enter_critical_section();
 	mask_interrupt(dev.pdata->irq_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	clk_enable(dev.pdata->clk_nr);
@@ -493,7 +493,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	clk_disable(dev.pdata->clk_nr);
 	register_int_handler(dev.pdata->irq_nr, msm_i2c_isr, NULL);
 	unmask_interrupt(dev.pdata->irq_nr);
-	exit_critical_section();
+	//exit_critical_section();
 
 	return 0;
 }
@@ -502,10 +502,10 @@ void msm_i2c_remove() {
 	if (!dev.pdata)
 		return;//if driver is not installed
 		
-	enter_critical_section();
+	//enter_critical_section();
 	mask_interrupt(dev.pdata->irq_nr);
 	clk_disable(dev.pdata->clk_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	dev.pdata = NULL;
-	exit_critical_section();
+	//exit_critical_section();
 }
