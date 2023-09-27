@@ -30,6 +30,8 @@
 #include <Chipset/iomap.h>
 #include <Chipset/clock.h>
 
+#include <Protocol/EmbeddedClock.h>
+
 static UINTN ClocksLookup[NR_CLKS];
 
 VOID
@@ -281,6 +283,14 @@ MsmClockInit(VOID)
 	return EFI_SUCCESS;
 }
 
+/**
+ Protocol variable definition
+ **/
+EMBEDDED_CLOCK_PROTOCOL  gClock = {
+  ClkEnable,
+  ClkDisable,
+};
+
 EFI_STATUS
 EFIAPI
 ClockDxeInitialize(
@@ -288,11 +298,28 @@ ClockDxeInitialize(
 	IN EFI_SYSTEM_TABLE   *SystemTable
 )
 {
+	//
+	// Make sure the Gpio protocol has not been installed in the system yet.
+	//
+	ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gEmbeddedClockProtocolGuid);
+
 	FillClocksLookup();
 	if (MsmClockInit() == EFI_SUCCESS)
 	{
 		DEBUG((EFI_D_INFO, "Clock init done!\n"));
-		/* TODO: Install protocols for set_rate, enable*/
+		
+		// Install the Embedded Clock Protocol onto a new handle
+		Handle = NULL;
+		Status = gBS->InstallMultipleProtocolInterfaces (
+						&Handle,
+						&gEmbeddedClockProtocolGuid,
+						&gClock,
+						NULL
+						);
+
+		if (EFI_ERROR (Status)) {
+			Status = EFI_OUT_OF_RESOURCES;
+		}
 		return EFI_SUCCESS;
 	}
 	else {
