@@ -2,7 +2,15 @@
  * Copyright (c) 2012, Shantanu Gupta <shans95g@gmail.com>
  * Based on the open source driver from HTC, Interrupts are not supported yet
  */
+#include <Uefi.h>
 
+#include <Library/BaseLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/DebugLib.h>
+#include <Library/IoLib.h>
+#include <Library/PcdLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Library/LKEnvLib.h>
 #include <Library/TimerLib.h>
 #include <Chipset/msm_i2c.h>
@@ -321,6 +329,33 @@ void microp_i2c_probe(struct microp_platform_data *kpdata)
 	//microp_function_initialize();
 }
 
+void htcleo_led_set_mode(uint8_t mode)
+{
+    /* Mode
+    * 0 => All off
+    * 1 => Solid green
+    * 2 => Solid amber
+    */
+	uint8_t data[4];
+	
+	data[0] = 0;
+	data[1] = 0;
+	data[2] = 0;
+	data[3] = 0;
+	
+	switch(mode) {
+		case 0x01:
+			data[1] = 0x01;
+			break;
+		case 0x02:
+			data[1] = 0x02;
+			break;
+		case 0x00:
+		default:
+			data[1] = 0x00;
+	}
+	microp_i2c_write(MICROP_I2C_WCMD_LED_CTRL, data, 2);
+}
 
 EFI_STATUS
 EFIAPI
@@ -333,9 +368,10 @@ MicroPDxeInitialize(
 
 	microp_i2c_probe(&microp_pdata);
 
-    DEBUG((EFI_D_ERROR, "ABOUT TO TURN LED GREEN \n"));
-     MicroSecondDelay(3000);
-    //htcleo_led_set_mode(1);
+    // Turn led green as a test
+    htcleo_led_set_mode(1);
+
     DEBUG((EFI_D_ERROR, "LED NOW SHOULD BE GREEN \n"));
+    CpuDeadLoop();
 	return Status;
 }
