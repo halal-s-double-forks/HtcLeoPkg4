@@ -1,5 +1,5 @@
 /** @file
-  Clock driver for QSD8250
+  I2C driver for QSD8250
 
   Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
 
@@ -44,7 +44,5 @@ I2CDxeInitialize(
   ASSERT_EFI_ERROR(Status); */
 
 	DEBUG((EFI_D_ERROR, "I2CDxe init done! \n"));
-  
-
 	return Status;
 }

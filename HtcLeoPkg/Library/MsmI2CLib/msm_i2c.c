@@ -113,7 +113,7 @@ static void msm_i2c_write_delay(void)
 	if (readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT) & I2C_INTERFACE_SELECT_SCL)
 		return;
 		
-	udelay(6);
+	NanoSecondDelay(6);
 }
 
 static bool msm_i2c_fill_write_buffer(void)
@@ -255,7 +255,7 @@ static int msm_i2c_poll_notbusy(int warn)
 		}
 		
 		if (retries++ > 100)
-			mdelay(10);
+			MicroSecondDelay(10);
 	}
 	
 	I2C_ERR("Error waiting for notbusy\n");
@@ -292,29 +292,29 @@ static int msm_i2c_recover_bus_busy(void)
 			break;
 			
 		gpio_set(dev.pdata->scl_gpio, 0);
-		udelay(5);
+		NanoSecondDelay(5);
 		
 		gpio_set(dev.pdata->sda_gpio, 0);
-		udelay(5);
+		NanoSecondDelay(5);
 		
 		gpio_config(dev.pdata->scl_gpio, GPIO_INPUT);
-		udelay(5);
+		NanoSecondDelay(5);
 		
 		if (!gpio_get(dev.pdata->scl_gpio))
-			udelay(20);
+			NanoSecondDelay(20);
 			
 		if (!gpio_get(dev.pdata->scl_gpio))
-			mdelay(10);
+			MicroSecondDelay(10);
 			
 		gpio_clk_status = gpio_get(dev.pdata->scl_gpio);
 		gpio_config(dev.pdata->sda_gpio, GPIO_INPUT);
-		udelay(5);
+		NanoSecondDelay(5);
 	}
 	
 	if (dev.pdata->set_mux_to_i2c)
 		dev.pdata->set_mux_to_i2c(1);
 
-	udelay(10);
+	NanoSecondDelay(10);
 
 	status = readl(dev.pdata->i2c_base + I2C_STATUS);
 	if (!(status & I2C_STATUS_BUS_ACTIVE)) {
@@ -427,7 +427,7 @@ int msm_i2c_write(int chip, void *buf, size_t count)
 			rc = 0;
 			break;
 		}
-		mdelay(10);
+		MicroSecondDelay(10);
 		I2C_DBG(DEBUGLEVEL, "%s, i2c write retry\n", __func__);
 	}
 
@@ -453,7 +453,7 @@ int msm_i2c_read(int chip, uint8_t reg, void *buf, size_t count)
 			rc = 0;
 			break;
 		}
-		mdelay(10);
+		MicroSecondDelay(10);
 		I2C_DBG(DEBUGLEVEL, "%s, i2c read retry\n", __func__);
 	}
 	
