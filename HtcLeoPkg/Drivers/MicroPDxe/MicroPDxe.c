@@ -11,8 +11,8 @@
 #include <Library/PcdLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/BaseMemoryLib.h>
-#include <Library/LKEnvLib.h>
 #include <Library/TimerLib.h>
+#include <Library/LKEnvLib.h>
 #include <Chipset/msm_i2c.h>
 #include <Chipset/timer.h>
 
@@ -42,7 +42,7 @@ int microp_i2c_read(uint8_t addr, uint8_t *data, int length)
 	for (retry = 0; retry <= MSM_I2C_READ_RETRY_TIMES; retry++) {
 		if (msm_i2c_xfer(msgs, 2) == 2)
 			break;
-		mdelay(5);
+		MicroSecondDelay(5);
 	}
 	if (retry > MSM_I2C_WRITE_RETRY_TIMES)
 		return -1;
@@ -71,7 +71,7 @@ int microp_i2c_write(uint8_t addr, uint8_t *cmd, int length)
 	for (retry = 0; retry <= MSM_I2C_WRITE_RETRY_TIMES; retry++) {
 		if (msm_i2c_xfer(msg, 1) == 1)
 			break;
-		mdelay(5);
+		MicroSecondDelay(5);
 	}
 	if (retry > MSM_I2C_WRITE_RETRY_TIMES)
 		return -1;
@@ -87,12 +87,12 @@ int microp_read_adc(uint8_t channel, uint16_t *value)
 	cmd[1] = 1;
 
 	if (microp_i2c_write(MICROP_I2C_WCMD_READ_ADC_VALUE_REQ, cmd, 2) < 0) {
-		dprintf(SPEW, "%s: request adc fail!\n", __func__);
+		DEBUG((EFI_D_ERROR, "%s: request adc fail!\n", __func__));
 		return -1;
 	}
 
 	if (microp_i2c_read(MICROP_I2C_RCMD_ADC_VALUE, data, 2) < 0) {
-		dprintf(SPEW, "%s: read adc fail!\n", __func__);
+		DEBUG((EFI_D_ERROR, "%s: read adc fail!\n", __func__));
 		return -1;
 	}
 	
@@ -106,7 +106,7 @@ int microp_read_gpi_status(uint16_t *status)
 	uint8_t data[2];
 
 	if (microp_i2c_read(MICROP_I2C_RCMD_GPIO_STATUS, data, 2) < 0) {
-		dprintf(SPEW, "%s: read fail!\n", __func__);
+		DEBUG((EFI_D_ERROR, "%s: read fail!\n", __func__));
 		return -1;
 	}
 	
@@ -122,7 +122,7 @@ int microp_interrupt_get_status(uint16_t *interrupt_mask)
 
 	ret = microp_i2c_read(MICROP_I2C_RCMD_GPI_INT_STATUS, data, 2);
 	if (ret < 0) {
-		dprintf(SPEW, "%s: read interrupt status fail\n",  __func__);
+		DEBUG((EFI_D_ERROR, "%s: read interrupt status fail\n",  __func__));
 		return ret;
 	}
 
@@ -141,7 +141,7 @@ int microp_interrupt_enable( uint16_t interrupt_mask)
 	ret = microp_i2c_write(MICROP_I2C_WCMD_GPI_INT_CTL_EN, data, 2);
 
 	if (ret < 0)
-		dprintf(INFO, "%s: enable 0x%x interrupt failed\n", __func__, interrupt_mask);
+		DEBUG((EFI_D_ERROR, "%s: enable 0x%x interrupt failed\n", __func__, interrupt_mask));//INFO
 	return ret;
 }
 
@@ -155,7 +155,7 @@ int microp_interrupt_disable(uint16_t interrupt_mask)
 	ret = microp_i2c_write(MICROP_I2C_WCMD_GPI_INT_CTL_DIS, data, 2);
 
 	if (ret < 0)
-		dprintf(INFO, "%s: disable 0x%x interrupt failed\n", __func__, interrupt_mask);
+		DEBUG((EFI_D_ERROR, "%s: disable 0x%x interrupt failed\n", __func__, interrupt_mask));//INFO
 	return ret;
 }
 
@@ -165,7 +165,7 @@ int microp_read_gpo_status(uint16_t *status)
 
 	if (microp_i2c_read(MICROP_I2C_RCMD_GPIO_STATUS, data, 2) < 0) 
 	{
-		dprintf(CRITICAL, "%s: read failed!\n", __func__);
+		DEBUG((EFI_D_ERROR, "%s: read failed!\n", __func__));
 		return -1;
 	}
 
@@ -184,7 +184,9 @@ int microp_gpo_enable(uint16_t gpo_mask)
 	ret = microp_i2c_write(MICROP_I2C_WCMD_GPO_LED_STATUS_EN, data, 2);
 
 	if (ret < 0)
-		dprintf(CRITICAL, "%s: enable 0x%x interrupt failed\n", __func__, gpo_mask);
+    {
+		DEBUG((EFI_D_ERROR, "%s: enable 0x%x interrupt failed\n", __func__, gpo_mask));
+    }
 
 	return ret;
 }
@@ -198,8 +200,9 @@ int microp_gpo_disable(uint16_t gpo_mask)
 	data[1] = gpo_mask & 0xFF;
 	ret = microp_i2c_write(MICROP_I2C_WCMD_GPO_LED_STATUS_DIS, data, 2);
 
-	if (ret < 0)
-		dprintf(CRITICAL, "%s: disable 0x%x interrupt failed\n", __func__, gpo_mask);
+	if (ret < 0) {
+		DEBUG((EFI_D_ERROR, "%s: disable 0x%x interrupt failed\n", __func__, gpo_mask));
+    }
 
 	return ret;
 }
@@ -298,7 +301,7 @@ static int microp_function_initialize(void)
 
 	ret = microp_interrupt_enable(interrupts);
 	if (ret < 0) {
-		dprintf(CRITICAL, "%s: failed to enable gpi irqs\n", __func__);
+		DEBUG((EFI_D_ERROR, "%s: failed to enable gpi irqs\n", __func__));
 		goto err_irq_en;
 	}
 
@@ -318,10 +321,10 @@ void microp_i2c_probe(struct microp_platform_data *kpdata)
 	uint8_t data[6];
 	if (microp_i2c_read(MICROP_I2C_RCMD_VERSION, data, 2) < 0) {
 		msm_microp_i2c_status = 0;
-		printf("microp get version failed!\n");
+		DEBUG((EFI_D_ERROR, "microp get version failed!\n"));
 		return;
 	}
-	printf("HTC MicroP 0x%02X\n", data[0]);
+	DEBUG((EFI_D_ERROR, "HTC MicroP 0x%02X\n", data[0]));
 	msm_microp_i2c_status = 1;
 	
 	//gpio_set(pdata->gpio_reset, 1);
