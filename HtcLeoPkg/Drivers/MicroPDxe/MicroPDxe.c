@@ -204,7 +204,7 @@ int microp_gpo_disable(uint16_t gpo_mask)
 	return ret;
 }
 
-static int als_power_control=0;
+/*static int als_power_control=0;
 struct mutex capella_cm3602_lock;
 int capella_cm3602_power(int pwr_device, uint8_t enable)
 {
@@ -250,7 +250,7 @@ int capella_cm3602_power(int pwr_device, uint8_t enable)
 	mutex_release(&capella_cm3602_lock);
 	
 	return ret;
-}
+}*/
 
 /*
 static irqreturn_t microp_i2c_intr_irq_handler(int irq, void *dev_id)
