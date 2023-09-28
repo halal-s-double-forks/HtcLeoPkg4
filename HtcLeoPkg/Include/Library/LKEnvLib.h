@@ -130,7 +130,7 @@ typedef unsigned long u_long;
 #define INFO DEBUG_INFO
 #define SPEW DEBUG_VERBOSE
 
-#if !defined(MDEPKG_NDEBUG)
+//#if !defined(MDEPKG_NDEBUG)
 #define dprintf(level, fmt, ...) do { \
                                    if (DebugPrintEnabled ()) { \
                                      CHAR8 __printbuf[100]; \
@@ -146,9 +146,9 @@ typedef unsigned long u_long;
                                      DEBUG(((level), __printbuf, ##__VA_ARGS__)); \
                                    } \
                                  } while(0)
-#else
-#define dprintf(level, fmt, ...)
-#endif
+//#else
+//#define dprintf(level, fmt, ...)
+//#endif
 
 #define ntohl(n) SwapBytes32(n)
 

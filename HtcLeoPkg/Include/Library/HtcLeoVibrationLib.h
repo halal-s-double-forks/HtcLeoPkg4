@@ -18,7 +18,7 @@
 
 #include <Library/DebugLib.h>
 #include <Library/qcom_qsd8250_iomap.h>
-#include <Library/HtcLeoGpio.h>
+#include <Device/Gpio.h>
 #include <Library/qcom_lk.h>
 #include <Library/qcom_qsd8250_timer.h>
 #include <Library/gpio.h>
