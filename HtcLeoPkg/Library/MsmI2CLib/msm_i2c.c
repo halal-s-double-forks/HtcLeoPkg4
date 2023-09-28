@@ -244,20 +244,6 @@ out_err:
 	timeout = ERR_TIMED_OUT;
 }
 
-/*static enum handler_return msm_i2c_isr(void *arg) {
-	//enter_critical_section();
-	msm_i2c_interrupt_locked();
-	//exit_critical_section();
-	
-	return INT_RESCHEDULE;
-}*/
-
-void
-msm_i2c_isr()
-{
-	msm_i2c_interrupt_locked();
-}
-
 static int msm_i2c_poll_notbusy(int warn)
 {
 	uint32_t retries = 0;
@@ -358,7 +344,6 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 			goto err;
 	}
 
-	//enter_critical_section();
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 	}
@@ -370,15 +355,13 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.flush_cnt = 0;
 	dev.cnt = msgs->len;
 	msm_i2c_interrupt_locked();
-	//exit_critical_section();
 
 	/*
 	 * Now that we've setup the xfer, the ISR will transfer the data
 	 * and wake us up with dev.err set if there was an error
 	 */
 	ret_wait = msm_i2c_poll_notbusy(0); /* Read may not have stopped in time */
-	
-	//enter_critical_section();
+
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 	}
@@ -389,7 +372,6 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.ret = 0;
 	dev.flush_cnt = 0;
 	dev.cnt = 0;
-	//exit_critical_section();
 
 	if (ret_wait) {
 		I2C_DBG(DEBUGLEVEL, "Still busy after xfer completion\n");
@@ -507,21 +489,21 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 
 	gClock->ClkDisable(dev.pdata->clk_nr);
-	gInterrupt->RegisterInterruptSource(gInterrupt, dev.pdata->irq_nr, msm_i2c_isr);
+	gInterrupt->RegisterInterruptSource(gInterrupt, dev.pdata->irq_nr, msm_i2c_interrupt_locked);
 
 	return 0;
 }
 
 void msm_i2c_remove() {
 	if (!dev.pdata)
+	{
 		return;//if driver is not installed
-		
-	//enter_critical_section();
+	}
+
 	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 	gClock->ClkDisable(dev.pdata->clk_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	dev.pdata = NULL;
-	//exit_critical_section();
 }
 
 void
