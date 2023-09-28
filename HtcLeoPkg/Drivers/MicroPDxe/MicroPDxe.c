@@ -369,12 +369,13 @@ MicroPDxeInitialize(
 {
 	EFI_STATUS  Status = EFI_SUCCESS;
 
+	// Probe I2C first
+	Status = MsmI2cInitialize();
+  	ASSERT_EFI_ERROR(Status);
+
 	microp_i2c_probe(&microp_pdata);
 
     // Turn led green as a test
     htcleo_led_set_mode(1);
-
-    DEBUG((EFI_D_ERROR, "LED NOW SHOULD BE GREEN \n"));
-    CpuDeadLoop();
 	return Status;
 }
