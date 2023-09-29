@@ -16,7 +16,7 @@ typedef INTN(*microp_i2c_write_t)(UINT8 addr, UINT8 *cmd, int lengt);
 
 
 struct _HTCLEO_MICROP_PROTOCOL {
-  microp_i2c_write  Write;
+  microp_i2c_write_t  Write;
 };
 
 extern EFI_GUID gHtcLeoMicropProtocolGuid;
