@@ -17,6 +17,7 @@
 #include <Chipset/timer.h>
 
 #include <Device/microp.h>
+#include <Protocol/HtcLeoMicroP.h>
 
 /* global vars */
 int msm_microp_i2c_status = 0;
@@ -360,9 +361,8 @@ void htcleo_led_set_mode(uint8_t mode)
 	microp_i2c_write(MICROP_I2C_WCMD_LED_CTRL, data, 2);
 }
 
-EFI_HARDWARE_INTERRUPT_PROTOCOL gHtcLeoMicropProtocol = {
-  microp_i2c_write,
-  microp_i2c_read
+HTCLEO_MICROP_PROTOCOL gHtcLeoMicropProtocol = {
+  microp_i2c_write
 };
 
 EFI_STATUS
