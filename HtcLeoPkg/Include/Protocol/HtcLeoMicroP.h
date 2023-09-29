@@ -12,11 +12,12 @@
 
 typedef struct _HTCLEO_MICROP_PROTOCOL HTCLEO_MICROP_PROTOCOL;
 
-typedef INTN(*microp_i2c_write_t)(UINT8 addr, UINT8 *cmd, int lengt);
-
+typedef INTN(*microp_i2c_write_t)(UINT8 addr, UINT8 *cmd, INTN lengt);
+typedef INTN(*microp_i2c_read_t)(UINT8 addr, UINT8 *data, INTN length);
 
 struct _HTCLEO_MICROP_PROTOCOL {
   microp_i2c_write_t  Write;
+  microp_i2c_read_t Read;
 };
 
 extern EFI_GUID gHtcLeoMicropProtocolGuid;

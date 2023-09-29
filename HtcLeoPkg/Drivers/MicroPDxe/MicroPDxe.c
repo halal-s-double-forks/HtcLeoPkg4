@@ -362,7 +362,8 @@ void htcleo_led_set_mode(uint8_t mode)
 }
 
 HTCLEO_MICROP_PROTOCOL gHtcLeoMicropProtocol = {
-  microp_i2c_write
+  microp_i2c_write,
+  microp_i2c_read
 };
 
 EFI_STATUS
