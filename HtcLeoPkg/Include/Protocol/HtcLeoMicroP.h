@@ -2,7 +2,7 @@
 #define __HTCLEO_ROTOCOL_I2C_MICROP_H__
 
 
-#define QCOM_I2C_QUP_PROTOCOL_GUID                                             \
+#define HTCLEO_MICROP_PROTOCOL_GUID                                             \
   {                                                                            \
     0x2c898318, 0x41c1, 0x4309,                                                \
     {                                                                          \
@@ -19,6 +19,6 @@ struct _HTCLEO_MICROP_PROTOCOL {
   microp_i2c_write  Write;
 };
 
-extern EFI_GUID gQcomI2cQupProtocolGuid;
+extern EFI_GUID gHtcLeoMicropProtocolGuid;
 
 #endif
