@@ -26,16 +26,27 @@ UINT64  mSystemMemoryEnd = FixedPcdGet64 (PcdSystemMemoryBase) +
                            FixedPcdGet64 (PcdSystemMemorySize) - 1;
 
 VOID
-PainScreen(
+PaintScreen(
   IN  UINTN   Colour
 )
 {
-  UINT8 *start = (UINT8 *)0x02A00000;
-  UINT8 *end = (UINT8 *)0x02ABBB00;  
-
-  for (UINT8 *ptr = start; ptr < end; ptr++) {
-    *ptr = 0;
+  UINTN *Start = (UINTN *)FixedPcdGet32(PcdMipiFrameBufferAddress);
+  UINTN *End = (UINTN *)(FixedPcdGet32(PcdMipiFrameBufferAddress) + (FixedPcdGet32(PcdMipiFrameBufferWidth) * 
+                        FixedPcdGet32(PcdMipiFrameBufferHeight) *
+                        (FixedPcdGet32(PcdMipiFrameBufferPixelBpp) / 8)));
+  
+  for (UINTN *Ptr = Start; Ptr < End; Ptr++) {
+    *Ptr = Colour;
   }
+}
+
+VOID
+ReconfigFb()
+{
+  // Format (32bpp)
+  MmioWrite32(MDP_DMA_P_CONFIG, DMA_PACK_ALIGN_LSB|DMA_PACK_PATTERN_RGB|DMA_DITHER_EN|DMA_OUT_SEL_LCDC|DMA_IBUF_FORMAT_xRGB8888_OR_ARGB8888|DMA_DSTC0G_8BITS|DMA_DSTC1B_8BITS|DMA_DSTC2R_8BITS);
+  // Stride
+  MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, 4 * FixedPcdGet32(PcdMipiFrameBufferWidth));
 }
 
 VOID
@@ -55,8 +66,11 @@ PrePiMain (
   // Initialize the architecture specific bits
   ArchInitialize ();
 
+  // Reconfigure the framebuffer to 32bpp BGRA8888
+  ReconfigFb();
+
   // Paint the screen to black
-  PainScreen(Black);
+  PaintScreen(FB_BGRA8888_BLACK);
 
   // There are still a few things to do
   /* enable cp10 and cp11 */

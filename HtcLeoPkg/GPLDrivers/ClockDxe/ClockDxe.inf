@@ -47,11 +47,10 @@
   MsmPcomLib
   TimerLib
 
-[Guids]
-
 [Protocols]
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
+  gEmbeddedClockProtocolGuid
 
 [Pcd]
 
