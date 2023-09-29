@@ -15,6 +15,10 @@
 #include "menu.h"
 #include "CommonHeader.h"
 
+#define MICROP_I2C_WCMD_LED_PWM				0x25
+#define MICROP_I2C_WCMD_BL_EN				0x26
+#define MICROP_I2C_WCMD_LCM_BL_MANU_CTL		0x22
+
 MenuEntry MenuOptions[] = 
 {
     {1, L"Option 1", TRUE, &Option1Function},
@@ -233,11 +237,55 @@ EFI_STATUS StartAnotherApp(
   return Status;
 }
 
+
+
+
+
+INTN htcleo_panel_status = 0;
+static void htcleo_panel_bkl_pwr(INTN enable)
+{
+	htcleo_panel_status = enable;
+	UINT8 data[1];
+	data[0] = !!enable;
+	microp_i2c_write(MICROP_I2C_WCMD_BL_EN, data, 1);
+}
+
+static void htcleo_panel_bkl_level(UINT8 value)
+{
+	UINT8 data[1];
+	data[0] = value << 4;
+	microp_i2c_write(MICROP_I2C_WCMD_LCM_BL_MANU_CTL, data, 1);
+}
+
+void htcleo_panel_set_brightness(INTN val)
+{
+	if (val > 9) val = 9;
+	if (val < 1) {
+		if (htcleo_panel_status != 0)
+			htcleo_panel_bkl_pwr(0);
+		return;
+	} else {
+		if (htcleo_panel_status == 0)
+			htcleo_panel_bkl_pwr(1);
+		htcleo_panel_bkl_level((UINT8)val);
+		return;
+	}
+}
+
 void Option1Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
   DEBUG((EFI_D_ERROR, "You selected Option 1\n"));
+  htcleo_panel_set_brightness(1);
 }
+
+void Option2Function(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+{
+  DEBUG((EFI_D_ERROR, "You selected Option 2\n"));
+  htcleo_panel_set_brightness(9);
+}
+
 void EnterBootMgr(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable){
   EFI_STATUS                   Status;
   EFI_BOOT_MANAGER_LOAD_OPTION BootManagerMenu;
@@ -281,12 +329,6 @@ void ReturnToMainMenu(
 void NullFunction()
 {
   DEBUG((EFI_D_ERROR, "This feature is not supported yet\n"));
-}
-
-void Option2Function(
-    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
-{
-  DEBUG((EFI_D_ERROR, "You selected Option 2\n"));
 }
 
 void ExitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
