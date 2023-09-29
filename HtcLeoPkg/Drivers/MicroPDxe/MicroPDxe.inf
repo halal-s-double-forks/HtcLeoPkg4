@@ -54,6 +54,7 @@
   gEfiBlockIoProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
+  gHtcLeoMicropProtocolGuid
 
 [Pcd]
 
