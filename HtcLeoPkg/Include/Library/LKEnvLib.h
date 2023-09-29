@@ -8,7 +8,6 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/TimerLib.h>
 #include <Library/CacheMaintenanceLib.h>
-#include <Library/ArmLib.h>
 
 typedef INT8 int8_t;
 typedef INT16 int16_t;

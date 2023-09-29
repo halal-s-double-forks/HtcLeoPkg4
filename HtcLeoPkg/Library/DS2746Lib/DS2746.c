@@ -5,9 +5,10 @@
 #include <Chipset/msm_i2c.h>
 #include <Library/DS2746.h>
 
-uint32_t ds2746_voltage(uint8_t addr) {
-	uint32_t vol;
-	uint8_t s0, s1;
+
+UINT32 ds2746_voltage(UINT8 addr) {
+	UINT32 vol;
+	UINT8 s0, s1;
 
 	msm_i2c_read(addr, DS2746_VOLTAGE_MSB, &s0, 1);
 	msm_i2c_read(addr, DS2746_VOLTAGE_LSB, &s1, 1);
@@ -28,7 +29,7 @@ uint32_t ds2746_voltage(uint8_t addr) {
 */
 /*
 // The resistances in mOHM
-const uint16_t rsns[] = {
+const UINT16 rsns[] = {
 	25,			// 25 mOHM
 	20,			// 20 mOHM
 	15,			// 15 mOHM
@@ -36,9 +37,9 @@ const uint16_t rsns[] = {
 	5,			// 5 mOHM
 };
 */
-int16_t ds2746_current(uint8_t addr, uint16_t resistance) {
-	int16_t cur;
-	int8_t s0, s1;
+INT16 ds2746_current(UINT8 addr, UINT16 resistance) {
+	INT16 cur;
+	INT8 s0, s1;
 
 	msm_i2c_read(addr, DS2746_CURRENT_MSB, &s0, 1);
 	msm_i2c_read(addr, DS2746_CURRENT_LSB, &s1, 1);
@@ -49,9 +50,9 @@ int16_t ds2746_current(uint8_t addr, uint16_t resistance) {
 	return (((cur >> 2) * DS2746_CURRENT_ACCUM_RES) / resistance);
 }
 
-int16_t ds2745_temperature(uint8_t addr) {
-	int16_t temp;
-	int8_t s0, s1;
+INT16 ds2745_temperature(UINT8 addr) {
+	INT16 temp;
+	INT8 s0, s1;
 
 	msm_i2c_read(addr, DS2745_TEMPERATURE_MSB, &s0, 1);
 	msm_i2c_read(addr, DS2745_TEMPERATURE_LSB, &s1, 1);

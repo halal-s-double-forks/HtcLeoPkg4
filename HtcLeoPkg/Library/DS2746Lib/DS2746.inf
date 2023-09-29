@@ -27,6 +27,7 @@
   HtcLeoPkg/HtcLeoPkg.dec
 
 [LibraryClasses]
+  MsmI2CLib
 
 
 [Sources.common]

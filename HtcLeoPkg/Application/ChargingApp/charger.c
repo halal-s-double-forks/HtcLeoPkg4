@@ -12,26 +12,17 @@
   WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 **/
-
-
-#include <PiDxe.h>
-
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
-#include <Library/BaseMemoryLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
-#include <Library/PcdLib.h>
-#include <Library/IoLib.h>
-
-#include <Protocol/Timer.h>
-#include <Protocol/HardwareInterrupt.h>
 
 #include <Chipset/iomap.h>
 #include <Chipset/irqs.h>
 #include <Chipset/timer.h>
 #include <Library/gpio.h>
 #include <Library/DS2746.h>
+#include <Library/LKEnvLib.h>
 
 // USB
 #define B_SESSION_VALID   (1 << 11)
@@ -110,7 +101,7 @@ BOOLEAN EFIAPI CheckUsbStatus(
   //   DEBUG((EFI_D_ERROR, "Usb is removed\n"));
 	// }
 
-UINT32 value = MmioRead32(MSM_SHARED_BASE + 0xef20c);
+//UINT32 value = MmioRead32(MSM_SHARED_BASE + 0xef20c);
 // !!readl(MSM_SHARED_BASE + 0xef20c);
 BOOLEAN usbStatus = TRUE;
 return usbStatus;
@@ -146,8 +137,12 @@ VOID EFIAPI WantsCharging(
     IN VOID *Context)
 {
   BOOLEAN usbStatus = CheckUsbStatus(NULL,NULL);
-  UINT32 voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
+ 
   //get battery volate here and calc to percent
+
+
+   UINT32 voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
+  DEBUG((EFI_D_ERROR, "Battery Volatage is: %d\n", voltage));
   if (usbStatus){ //todo add battery percentage check somelike battery < 80 % && usbStatus should ensure we wont overcharge
   
   }
@@ -162,7 +157,7 @@ EFI_STATUS EFIAPI ChargingDxeInit(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE
   //install a timer to check for want charging every like 5 seconds
     Status = gBS->CreateEvent(
         EVT_NOTIFY_SIGNAL | EVT_TIMER,
-        TPL_CALLBACK, CheckUsbStatus, NULL,
+        TPL_CALLBACK, WantsCharging, NULL,
         &m_CallbackTimer
     );
 

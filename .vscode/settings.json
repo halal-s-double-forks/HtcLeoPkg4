@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "lkenvlib.h": "c",
+        "msm_i2c.h": "c"
+    }
+}

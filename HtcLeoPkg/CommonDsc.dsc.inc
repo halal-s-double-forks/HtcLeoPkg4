@@ -77,6 +77,7 @@
   PL011UartLib|ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
 
   TimerLib|HtcLeoPkg/Library/GPTTimerLib/GPTTimerLib.inf
+  DS2746Lib|HtcLeoPkg/Library/DS2746Lib/DS2746.inf
   InterruptsLib|HtcLeoPkg/Library/InterruptsLib/InterruptsLib.inf
 
   UefiDevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
