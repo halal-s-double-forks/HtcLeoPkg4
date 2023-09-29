@@ -7,6 +7,7 @@
 #include <Library/UefiLib.h>
 #include <Library/UefiBootManagerLib.h>
 #include <Library/TimerLib.h>
+#include <Protocol/HtcLeoMicroP.h>
 
 #include <Protocol/LoadedImage.h>
 #include <Resources/FbColor.h>
@@ -14,6 +15,8 @@
 
 #include "menu.h"
 #include "CommonHeader.h"
+
+HTCLEO_MICROP_PROTOCOL  *gMicrop;
 
 #define MICROP_I2C_WCMD_LED_PWM				0x25
 #define MICROP_I2C_WCMD_BL_EN				0x26
@@ -84,8 +87,12 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 {
   DEBUG((EFI_D_ERROR, "Main\n"));
   EFI_SIMPLE_TEXT_OUTPUT_MODE InitialMode;
+  EFI_STATUS Status;
 
   EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConsoleOut = gST->ConOut;
+
+    Status = gBS->LocateProtocol (&gHtcLeoMicropProtocolGuid, NULL, (VOID **)&gMicrop);
+  ASSERT_EFI_ERROR (Status);
 
   PrepareConsole(SystemTable->ConOut, &InitialMode);
 
@@ -247,14 +254,14 @@ static void htcleo_panel_bkl_pwr(INTN enable)
 	htcleo_panel_status = enable;
 	UINT8 data[1];
 	data[0] = !!enable;
-	microp_i2c_write(MICROP_I2C_WCMD_BL_EN, data, 1);
+	gMicrop->Write(MICROP_I2C_WCMD_BL_EN, data, 1);
 }
 
 static void htcleo_panel_bkl_level(UINT8 value)
 {
 	UINT8 data[1];
 	data[0] = value << 4;
-	microp_i2c_write(MICROP_I2C_WCMD_LCM_BL_MANU_CTL, data, 1);
+	gMicrop->Write(MICROP_I2C_WCMD_LCM_BL_MANU_CTL, data, 1);
 }
 
 void htcleo_panel_set_brightness(INTN val)
