@@ -360,6 +360,11 @@ void htcleo_led_set_mode(uint8_t mode)
 	microp_i2c_write(MICROP_I2C_WCMD_LED_CTRL, data, 2);
 }
 
+EFI_HARDWARE_INTERRUPT_PROTOCOL gHtcLeoMicropProtocol = {
+  microp_i2c_write,
+  microp_i2c_read
+};
+
 EFI_STATUS
 EFIAPI
 MicroPDxeInitialize(
@@ -368,6 +373,11 @@ MicroPDxeInitialize(
 )
 {
 	EFI_STATUS  Status = EFI_SUCCESS;
+	EFI_HANDLE Handle = NULL;
+
+	  Status = gBS->InstallMultipleProtocolInterfaces(
+      &Handle, &gHtcLeoMicropProtocolGuid, &gHtcLeoMicropProtocol, NULL);
+  ASSERT_EFI_ERROR(Status);
 
 	// Probe I2C first
 	Status = MsmI2cInitialize();
