@@ -376,15 +376,18 @@ MicroPDxeInitialize(
 	EFI_STATUS  Status = EFI_SUCCESS;
 	EFI_HANDLE Handle = NULL;
 
-	  Status = gBS->InstallMultipleProtocolInterfaces(
-      &Handle, &gHtcLeoMicropProtocolGuid, &gHtcLeoMicropProtocol, NULL);
-  ASSERT_EFI_ERROR(Status);
-
 	// Probe I2C first
 	Status = MsmI2cInitialize();
   	ASSERT_EFI_ERROR(Status);
 
 	microp_i2c_probe(&microp_pdata);
+
+	if (msm_microp_i2c_status) 
+	{
+		Status = gBS->InstallMultipleProtocolInterfaces(
+		&Handle, &gHtcLeoMicropProtocolGuid, &gHtcLeoMicropProtocol, NULL);
+		ASSERT_EFI_ERROR(Status);
+	}
 
 	return Status;
 }
