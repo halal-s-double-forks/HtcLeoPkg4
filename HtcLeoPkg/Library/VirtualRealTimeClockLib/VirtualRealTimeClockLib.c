@@ -55,7 +55,7 @@ EFI_STATUS
 EFIAPI
 LibGetTime(OUT EFI_TIME *Time, OUT EFI_TIME_CAPABILITIES *Capabilities)
 {
-  UINT32 Freq = FixedPcdGet32(PcdTimerFreqInHz);
+  UINT32 Freq = FixedPcdGet32(PcdMsmDgtTimerFreq);
 
   if (Time == NULL) {
     return EFI_INVALID_PARAMETER;

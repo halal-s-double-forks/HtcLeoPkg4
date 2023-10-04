@@ -84,7 +84,6 @@
   MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
   MsmPcomClientLib|HtcLeoPkg/Library/MsmPcomClientLib/MsmPcomClientLib.inf
   HtcLeoVibrationLib|HtcLeoPkg/GPLLibrary/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
-  MsmI2CLib|HtcLeoPkg/GPLLibrary/MsmI2CLib/MsmI2CLib.inf
 
   # SoC Drivers libraries
   StrLib|HtcLeoPkg/Library/StrLib/StrLib.inf
@@ -134,15 +133,6 @@
   # We boot all processors here!!!!!
   gArmPlatformTokenSpaceGuid.PcdCoreCount|1
   gArmPlatformTokenSpaceGuid.PcdClusterCount|1
-
-  #
-  # ARM PrimeCell
-  #
-
-  #
-  # ARM Vectored Interrupt Controller
-  #
-  gArmTokenSpaceGuid.PcdVicBase|0xAC000000
 
   # GUID of the UI app
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
@@ -242,6 +232,7 @@
   HtcLeoPkg/GPLDrivers/SdCardDxe/SdCardDxe.inf
   HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
   HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
+  HtcLeoPkg/GPLDrivers/I2CDxe/I2CDxe.inf
   HtcLeoPkg/Drivers/MicroPDxe/MicroPDxe.inf
 
   #
