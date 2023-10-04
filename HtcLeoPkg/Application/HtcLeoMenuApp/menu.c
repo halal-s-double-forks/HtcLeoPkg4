@@ -13,14 +13,12 @@
 #include <Resources/FbColor.h>
 #include <Chipset/timer.h>
 
+#include <Device/microp.h>
+
 #include "menu.h"
 #include "CommonHeader.h"
 
 HTCLEO_MICROP_PROTOCOL  *gMicrop;
-
-#define MICROP_I2C_WCMD_LED_PWM				0x25
-#define MICROP_I2C_WCMD_BL_EN				0x26
-#define MICROP_I2C_WCMD_LCM_BL_MANU_CTL		0x22
 
 MenuEntry MenuOptions[] = 
 {
