@@ -28,7 +28,6 @@
   TimerLib
   ResetSystemLib
   UefiBootManagerLib
-  MsmI2CLib
 
 [Protocols]
   gEfiLoadedImageProtocolGuid

@@ -91,7 +91,8 @@ ShellAppMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
 
   EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConsoleOut = gST->ConOut;
 
-    Status = gBS->LocateProtocol (&gHtcLeoMicropProtocolGuid, NULL, (VOID **)&gMicrop);
+  // Find the microp protocol.  ASSERT if not found.
+  Status = gBS->LocateProtocol (&gHtcLeoMicropProtocolGuid, NULL, (VOID **)&gMicrop);
   ASSERT_EFI_ERROR (Status);
 
   PrepareConsole(SystemTable->ConOut, &InitialMode);
