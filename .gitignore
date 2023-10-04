@@ -6,3 +6,4 @@ ImageResources/Tools/*.bin
 ImageResources/Tools/nbgen
 ImageResources/uefi.img
 workspace/Build/
+.vscode/*
