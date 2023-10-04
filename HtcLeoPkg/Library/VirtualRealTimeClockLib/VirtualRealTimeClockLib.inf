@@ -40,4 +40,4 @@
   PcdLib
 
 [FixedPcd]
-  gHtcLeoPkgTokenSpaceGuid.PcdTimerFreqInHz
+  gHtcLeoPkgTokenSpaceGuid.PcdMsmDgtTimerFreq

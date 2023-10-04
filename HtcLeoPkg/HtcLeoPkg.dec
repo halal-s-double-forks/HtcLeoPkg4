@@ -65,12 +65,7 @@
   gHtcLeoPkgTokenSpaceGuid.PcdMsmGptVector|8|UINT32|0x0000a410
   gHtcLeoPkgTokenSpaceGuid.PcdMsmDgtTimerFreq|4800000|UINT32|0x0000a411
 
-  gHtcLeoPkgTokenSpaceGuid.PcdTimerFreqInHz|4800000|UINT32|0x0000a412
-
   # SMEM
   gQcomTokenSpaceGuid.PcdMsmSharedBase|0x00100000|UINT64|0x00000001
   gQcomTokenSpaceGuid.PcdMsmSharedSize|0x00100000|UINT64|0x00000002
   gQcomTokenSpaceGuid.PcdSmemTargetInfoAddress|0|UINT64|0x0000003
-
-  # Interrupt Controller
-  gArmTokenSpaceGuid.PcdVicBase|0xAC000000|UINT32|0x0000a413
