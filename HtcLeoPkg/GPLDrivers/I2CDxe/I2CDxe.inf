@@ -13,18 +13,18 @@
 
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = MicroPDxe
-  FILE_GUID                      = 4e766dcb-a2a5-4d2b-8364-c2ef8f99b0cc
+  BASE_NAME                      = I2CDxe
+  FILE_GUID                      = 4e766dcb-a2a5-4d2b-8364-c2ef8f99b0cd
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
 
-  ENTRY_POINT                    = MicroPDxeInitialize
+  ENTRY_POINT                    = I2CDxeInitialize
 
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-missing-braces
 
 [Sources.common]
-  MicroPDxe.c
+  I2CDxe.c
 
 [Packages]
   ArmPkg/ArmPkg.dec
@@ -46,17 +46,20 @@
   DebugLib
   UefiBootServicesTableLib
   TimerLib
+  MsmPcomLib
+  MsmTargetGpioLib
   
 [Guids]
 
 [Protocols]
-  gEfiBlockIoProtocolGuid
+  gHardwareInterruptProtocolGuid
+  gEmbeddedClockProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
-  gHtcLeoMicropProtocolGuid
   gHtcLeoI2CProtocolGuid
 
 [Pcd]
 
 [Depex]
-  gHtcLeoI2CProtocolGuid
+  TRUE
+
