@@ -5,8 +5,7 @@ set -e
 export PACKAGES_PATH=$PWD/../edk2:$PWD/../edk2-platforms:$PWD
 export WORKSPACE=$PWD/workspace
 . ../edk2/edksetup.sh
-# not actually GCC5; it's GCC7 on Ubuntu 18.04.
-GCC5_ARM_PREFIX=arm-none-eabi- build -s -n 0 -a ARM -t GCC5 -p HtcLeoPkg/HtcLeoPkg.dsc
+GCC_ARM_PREFIX=arm-none-eabi- build -s -n 0 -a ARM -t GCC -p HtcLeoPkg/HtcLeoPkg.dsc
 
 chmod +x build_boot_shim.sh
 ./build_boot_shim.sh
