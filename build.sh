@@ -10,7 +10,7 @@ GCC_ARM_PREFIX=arm-none-eabi- build -s -n 0 -a ARM -t GCC -p HtcLeoPkg/HtcLeoPkg
 chmod +x build_boot_shim.sh
 ./build_boot_shim.sh
 
-cat BootShim/BootShim.bin workspace/Build/QSD8250/DEBUG_GCC5/FV/QSD8250_UEFI.fd >>ImageResources/Tools/lk.bin
+cat BootShim/BootShim.bin workspace/Build/QSD8250/DEBUG_GCC/FV/QSD8250_UEFI.fd >>ImageResources/Tools/lk.bin
 
 mkbootimg --kernel ImageResources/Tools/lk.bin --base 0x11800000 --kernel_offset 0x00008000 -o ImageResources/uefi.img
 
