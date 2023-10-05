@@ -6,10 +6,10 @@
 |---------------|-----------------------------------------|--------|
 | GPIO          | Based on cLK driver                     |   ✅   |
 | SD Card       | Based on cLK driver                     |   ✅   |
-| I2C           | Driver exists in cLK                    |   ✅   |
+| I2C           | Based on cLK driver                     |   ✅   |
 | Panel         | Driver exists in cLK                    |   ❌   |
 | Charging      | Supported in cLK since 1.5.x            |   ❌   |
-| Battery Gauge | Supported in cLK since 1.5.x (needs i2c)|   ❌   |
+| Battery Gauge | Supported in cLK since 1.5.x            |   ❌   |
 | USB           | Driver exists in cLK                    |   ❌   |
 | Keypad        | Loosely based on cLK driver             |   ✅   |
 
