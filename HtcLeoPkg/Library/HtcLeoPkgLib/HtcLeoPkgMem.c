@@ -30,6 +30,9 @@
 #define QSD8250_PERIPH_BASE              0xA0000000
 #define QSD8250_PERIPH_SIZE              0x0C300000
 
+#define FB_ADDR 0x02A00000
+#define FB_SIZE 0x000C0000
+
 STATIC struct ReservedMemory {
     EFI_PHYSICAL_ADDRESS         Offset;
     EFI_PHYSICAL_ADDRESS         Size;
@@ -38,7 +41,7 @@ STATIC struct ReservedMemory {
     { 0x00100000, 0x00100000 },    // SMEM
     { 0x00200000, 0x00200000 },    // OEMSBL
     { 0x00400000, 0x02100000 },    // AMSS
-    { 0x02A00000, 0x00177000 },    // Display Reserved (0x000BBB00)
+    { FB_ADDR,    FB_SIZE    },    // Display Reserved
 };
 
 /**
@@ -135,6 +138,12 @@ ArmPlatformGetVirtualMemoryMap (
     VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
     VirtualMemoryTable[Index].Length          = PcdGet64 (PcdSystemMemorySize);
     VirtualMemoryTable[Index].Attributes      = CacheAttributes;
+
+    // Framebuffer
+    VirtualMemoryTable[++Index].PhysicalBase  = FB_ADDR;
+    VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
+    VirtualMemoryTable[Index].Length          = FB_SIZE;
+    VirtualMemoryTable[Index].Attributes      = DDR_ATTRIBUTES_UNCACHED;
 
     // SOC peripherals after DDR
     VirtualMemoryTable[++Index].PhysicalBase  = QSD8250_PERIPH_BASE;
