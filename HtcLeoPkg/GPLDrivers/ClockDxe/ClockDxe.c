@@ -289,6 +289,7 @@ MsmClockInit(VOID)
 EMBEDDED_CLOCK_PROTOCOL  gClock = {
   ClkEnable,
   ClkDisable,
+  ClkSetRate,
 };
 
 EFI_STATUS
@@ -302,7 +303,7 @@ ClockDxeInitialize(
   	EFI_HANDLE       Handle;
 	
 	//
-	// Make sure the Gpio protocol has not been installed in the system yet.
+	// Make sure the clock protocol has not been installed in the system yet.
 	//
 	ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gEmbeddedClockProtocolGuid);
 
