@@ -19,7 +19,7 @@
 
 #include <Ppi/ArmMpCoreInfo.h>
 
-ARM_CORE_INFO mHiKey960InfoTable[] = {
+ARM_CORE_INFO mHtcLeoInfoTable[] = {
     {
         // Cluster 0, Core 0
         0x000,
@@ -27,50 +27,6 @@ ARM_CORE_INFO mHiKey960InfoTable[] = {
         // MP Core MailBox Set/Get/Clear Addresses and Clear Value
         (UINT64)0xFFFFFFFF
     },
-    /*
-      {
-        // Cluster 0, Core 1
-        0x001
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      },
-      {
-        // Cluster 0, Core 2
-        0x002,
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      },
-      {
-        // Cluster 0, Core 3
-        0x003,
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      },
-      {
-        // Cluster 1, Core 0
-        0x1, 0x0,
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      },
-      {
-        // Cluster 1, Core 1
-        0x1, 0x1,
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      },
-      {
-        // Cluster 1, Core 2
-        0x1, 0x2,
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      },
-      {
-        // Cluster 1, Core 3
-        0x1, 0x3,
-        // MP Core MailBox Set/Get/Clear Addresses and Clear Value
-        (UINT64)0xFFFFFFFF
-      }
-    */
 };
 
 /**
@@ -103,8 +59,8 @@ PrePeiCoreGetMpCoreInfo (
     OUT ARM_CORE_INFO           **ArmCoreTable
 ) {
     // Only support one cluster
-    *CoreCount    = sizeof(mHiKey960InfoTable) / sizeof(ARM_CORE_INFO);
-    *ArmCoreTable = mHiKey960InfoTable;
+    *CoreCount    = sizeof(mHtcLeoInfoTable) / sizeof(ARM_CORE_INFO);
+    *ArmCoreTable = mHtcLeoInfoTable;
     return EFI_SUCCESS;
 }
 

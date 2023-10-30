@@ -83,7 +83,6 @@ InterruptsLibIrqHandler (
 {
   EFI_TPL     OriginalTPL;
 
-  Source = MmioRead32(VIC_IRQ_VEC_RD);
   Source = MmioRead32(VIC_IRQ_VEC_PEND_RD);
   MmioWrite32((Source > 31) ? VIC_INT_CLEAR1 : VIC_INT_CLEAR0, 1 << (Source & 31));
 

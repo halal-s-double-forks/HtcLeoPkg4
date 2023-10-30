@@ -300,15 +300,13 @@ void msm_gpio_config(unsigned config, unsigned disable)
 		writel(gpio, MSM_GPIOCFG1_BASE + 0x20);
 		writel(cfg, MSM_GPIOCFG1_BASE + 0x24);
 		if (readl(MSM_GPIOCFG1_BASE + 0x20) != gpio) {
-			//dprintf(CRITICAL, "[GPIO]: could not set alt func %u => %u\n",
-			// gpio, MSM_GPIO_FUNC(config));
+			DEBUG((EFI_D_INFO, "[GPIO]: could not set alt func %u => %u\n", gpio, MSM_GPIO_FUNC(config)));
 		}
 	} else {
 		writel(gpio, MSM_GPIOCFG2_BASE + 0x410);
 		writel(cfg, MSM_GPIOCFG2_BASE + 0x414);
 		if (readl(MSM_GPIOCFG2_BASE + 0x410) != gpio) {
-			//dprintf(CRITICAL, "[GPIO]: could not set alt func %u => %u\n",
-			 //gpio, MSM_GPIO_FUNC(config));
+			DEBUG((EFI_D_INFO, "[GPIO]: could not set alt func %u => %u\n", gpio, MSM_GPIO_FUNC(config)));
 		}
 	}
 
@@ -340,7 +338,6 @@ int msm_gpio_configure(unsigned int gpio, unsigned long flags)
 	}
 
 	/* Interrupt part stripped */
-
 	return 0;
 }
 
@@ -364,7 +361,7 @@ static void msm_gpio_update_both_edge_detect(unsigned gpio)
 		if (((val ^ val2) & ~intstat) == 0)
 			return;
 	} while (loop_limit-- > 0);
-	//dprintf(INFO, "%s, failed to reach stable state %x != %x\n", __func__,val, val2);
+	DEBUG((EFI_D_INFO, "%s, failed to reach stable state %x != %x\n", __func__,val, val2));
 }
 
 static int msm_gpio_irq_clear(unsigned gpio)
@@ -504,7 +501,7 @@ void msm_gpio_deinit(void)
 void register_gpio_int_handler(unsigned gpio, int_handler handler, void *arg)
 {
 	if (gpio > NR_MSM_GPIOS) {
-		//dprintf(CRITICAL, "%s: gpio %d is out of supported range\n", __func__, gpio);
+		DEBUG((EFI_D_ERROR, "%s: gpio %d is out of supported range\n", __func__, gpio));
 	}
 	
 	gpio_irq_handlers[gpio].handler = handler;

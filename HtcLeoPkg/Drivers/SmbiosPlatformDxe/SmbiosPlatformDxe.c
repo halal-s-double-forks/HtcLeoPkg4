@@ -27,19 +27,19 @@
 #include <Protocol/Smbios.h>
 
 #define TYPE0_STRINGS                                    \
-  "EFI Development Kit II / ARM LTD\0" /* Vendor */      \
-  "EDK II\0"                           /* BiosVersion */ \
-  __DATE__"\0"                         /* BiosReleaseDate */
+  "Htc Leo Revival Project\0" /* Vendor */      \
+  "EDK II\0"                          /* BiosVersion */ \
+  __DATE__"\0"                        /* BiosReleaseDate */
 
 #define TYPE1_STRINGS                                   \
-  "HTC\0"                         /* Manufacturer */ \
-  "LEO\0"                     /* Product Name */ \
+  "HTC\0"                            /* Manufacturer */ \
+  "LEO\0"                            /* Product Name */ \
   "None\0"                           /* Version */      \
   "                    \0"           /* 20 character buffer */
 
 #define TYPE2_STRINGS                                     \
-  "HTC\0"                         /* Manufacturer */   \
-  "LEO\0"                     /* Product Name */   \
+  "HTC\0"                            /* Manufacturer */   \
+  "LEO\0"                            /* Product Name */   \
   "R0\0"                             /* Version */        \
   "Serial Not Set\0"                 /* Serial */         \
   "Base of Chassis\0"                /* board location */ \

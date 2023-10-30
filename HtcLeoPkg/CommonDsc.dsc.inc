@@ -63,13 +63,10 @@
   DefaultExceptionHandlerLib|HtcLeoPkg/Library/DefaultExceptionHandlerLib/DefaultExceptionHandlerLib.inf
   CpuExceptionHandlerLib|ArmPkg/Library/ArmExceptionLib/ArmExceptionLib.inf
   ArmDisassemblerLib|ArmPkg/Library/ArmDisassemblerLib/ArmDisassemblerLib.inf
-  #_ArmGicLib|ArmPkg/Drivers/ArmGic/ArmGicLib.inf
-  #_ArmGicArchLib|ArmPkg/Library/ArmGicArchLib/ArmGicArchLib.inf
   ArmPlatformStackLib|ArmPlatformPkg/Library/ArmPlatformStackLib/ArmPlatformStackLib.inf
-  #_ArmSmcLib|ArmPkg/Library/ArmSmcLib/ArmSmcLib.inf
+  ArmSmcLib|ArmPkg/Library/ArmSmcLib/ArmSmcLib.inf
   ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
 
-  # ResetSystemLib|ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
   ResetSystemLib|HtcLeoPkg/Library/HtcLeoPlatformResetLib/HtcLeoPlatformResetLib.inf
 
   # ARM PL011 UART Driver
