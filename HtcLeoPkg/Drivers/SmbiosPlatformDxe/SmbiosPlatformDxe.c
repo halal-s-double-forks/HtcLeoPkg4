@@ -312,7 +312,7 @@ STATIC CONST ARM_TYPE7 mArmDefaultType7_a8_l1i = {
             // SMBIOS_STRUCTURE Hdr
             EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
             sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_8_L1I,
+            SMBIOS_HANDLE_A8_L1I,
         },
         1,
         0x380, //L1 enabled, unknown WB
