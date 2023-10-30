@@ -44,13 +44,13 @@ steps:
       ./build.sh
 
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Htc Leo UEFI build'
+  displayName: 'Publish Htc Leo UEFI kernel'
   inputs: 
     pathtoPublish: /home/vsts/work/1/HtcLeoPkg/ImageResources/uefi.img
     artifactName: Htc Leo UEFI kernel
 
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Htc Leo UEFI build'
+  displayName: 'Publish Htc Leo UEFI NBH'
   inputs: 
-    pathtoPublish: /home/vsts/work/1/HtcLeoPkg/ImageResources/Tools/LEOIMG.nbh
+    pathtoPublish: /home/vsts/work/1/HtcLeoPkg/ImageResources/LEOIMG.nbh
     artifactName: Htc Leo UEFI NBH
