@@ -25,19 +25,32 @@
 UINT64  mSystemMemoryEnd = FixedPcdGet64 (PcdSystemMemoryBase) +
                            FixedPcdGet64 (PcdSystemMemorySize) - 1;
 
+UINTN gWidth = FixedPcdGet32(PcdMipiFrameBufferWidth);
+UINTN gHeight = FixedPcdGet32(PcdMipiFrameBufferHeight);
+UINTN gBpp = FixedPcdGet32(PcdMipiFrameBufferPixelBpp);
+
 VOID
 PaintScreen(
-  IN  UINTN   Colour
+  IN  UINTN   BgColor
 )
 {
-  UINTN *Start = (UINTN *)FixedPcdGet32(PcdMipiFrameBufferAddress);
-  UINTN *End = (UINTN *)(FixedPcdGet32(PcdMipiFrameBufferAddress) + (FixedPcdGet32(PcdMipiFrameBufferWidth) * 
-                        FixedPcdGet32(PcdMipiFrameBufferHeight) *
-                        (FixedPcdGet32(PcdMipiFrameBufferPixelBpp) / 8)));
-  
-  for (UINTN *Ptr = Start; Ptr < End; Ptr++) {
-    *Ptr = Colour;
-  }
+  // Code from FramebufferSerialPortLib
+	char* Pixels = (void*)FixedPcdGet32(PcdMipiFrameBufferAddress);
+
+	// Set to black color.
+	for (UINTN i = 0; i < gWidth; i++)
+	{
+		for (UINTN j = 0; j < gHeight; j++)
+		{
+			// Set pixel bit
+			for (UINTN p = 0; p < (gBpp / 8); p++)
+			{
+				*Pixels = (unsigned char)BgColor;
+				BgColor = BgColor >> 8;
+				Pixels++;
+			}
+		}
+	}
 }
 
 VOID
