@@ -137,28 +137,28 @@ ArmPlatformGetVirtualMemoryMap (
     }
 
     // Remap the framebuffer region as uncached memory
-    VirtualMemoryTable[++Index].PhysicalBase  = FB_ADDR;
+    VirtualMemoryTable[Index].PhysicalBase  = FB_ADDR;
     VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
     VirtualMemoryTable[Index].Length          = FB_SIZE;
-    VirtualMemoryTable[Index].Attributes      = DDR_ATTRIBUTES_UNCACHED;
+    VirtualMemoryTable[Index++].Attributes      = DDR_ATTRIBUTES_UNCACHED;
 
     // Remap the FD region as normal executable memory
-    VirtualMemoryTable[++Index].PhysicalBase  = PcdGet64 (PcdFdBaseAddress);
+    VirtualMemoryTable[Index].PhysicalBase  = PcdGet64 (PcdFdBaseAddress);
     VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
     VirtualMemoryTable[Index].Length          = FixedPcdGet32 (PcdFdSize);
-    VirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    VirtualMemoryTable[Index++].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
     // SOC peripherals after DDR
-    VirtualMemoryTable[++Index].PhysicalBase  = QSD8250_PERIPH_BASE;
+    VirtualMemoryTable[Index].PhysicalBase  = QSD8250_PERIPH_BASE;
     VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
     VirtualMemoryTable[Index].Length          = QSD8250_PERIPH_SIZE;
-    VirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+    VirtualMemoryTable[Index++].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
 
     // End of Table
-    VirtualMemoryTable[++Index].PhysicalBase  = 0;
+    VirtualMemoryTable[Index].PhysicalBase  = 0;
     VirtualMemoryTable[Index].VirtualBase     = 0;
     VirtualMemoryTable[Index].Length          = 0;
-    VirtualMemoryTable[Index].Attributes      = (ARM_MEMORY_REGION_ATTRIBUTES)0;
+    VirtualMemoryTable[Index++].Attributes      = (ARM_MEMORY_REGION_ATTRIBUTES)0;
 
     ASSERT((Index + 1) <= MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS);
     *VirtualMemoryMap = VirtualMemoryTable;
