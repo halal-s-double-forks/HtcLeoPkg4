@@ -59,6 +59,7 @@ ArmPlatformGetVirtualMemoryMap (
     ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryTable;
     EFI_RESOURCE_ATTRIBUTE_TYPE   ResourceAttributes;
     UINTN                         Index = 0, Count, ReservedTop;
+    UINTN                         IndexDram = -1;
     EFI_PEI_HOB_POINTERS          NextHob;
     UINT64                        ResourceLength;
     EFI_PHYSICAL_ADDRESS          ResourceTop;
@@ -120,30 +121,32 @@ ArmPlatformGetVirtualMemoryMap (
     CacheAttributes = DDR_ATTRIBUTES_CACHED;
     Index = 0;
 
-    // SOC peripherals before DDR
-    VirtualMemoryTable[Index].PhysicalBase    = 0x00000000;
-    VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
-    VirtualMemoryTable[Index].Length          = PcdGet64 (PcdSystemMemoryBase) - 0x01800000;
-    VirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
-    Index++;
+    // System DRAM
+    VirtualMemoryTable[Index].PhysicalBase = PcdGet64 (PcdSystemMemoryBase);
+    VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
+    VirtualMemoryTable[Index].Length       = PcdGet64 (PcdSystemMemorySize);
+    VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
+    IndexDram = Index++;
 
-    // MPU protected DDR
-    VirtualMemoryTable[Index].PhysicalBase    = 0x10000000;
-    VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
-    VirtualMemoryTable[Index].Length          = PcdGet64 (PcdSystemMemoryBase) - 0x10000000;
-    VirtualMemoryTable[Index].Attributes      = WRITE_BACK_XN;
+    // Peripheral space before DRAM
+    if (VirtualMemoryTable[IndexDram].PhysicalBase != 0) {
+        VirtualMemoryTable[Index].PhysicalBase = 0x0;
+        VirtualMemoryTable[Index].VirtualBase  = 0x0;
+        VirtualMemoryTable[Index].Length       = VirtualMemoryTable[IndexDram].PhysicalBase;
+        VirtualMemoryTable[Index++].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+    }
 
-    // DDR - 448 MB section
-    VirtualMemoryTable[++Index].PhysicalBase  = PcdGet64 (PcdSystemMemoryBase);
-    VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
-    VirtualMemoryTable[Index].Length          = PcdGet64 (PcdSystemMemorySize);
-    VirtualMemoryTable[Index].Attributes      = CacheAttributes;
-
-    // Framebuffer
+    // Remap the framebuffer region as uncached memory
     VirtualMemoryTable[++Index].PhysicalBase  = FB_ADDR;
     VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
     VirtualMemoryTable[Index].Length          = FB_SIZE;
     VirtualMemoryTable[Index].Attributes      = DDR_ATTRIBUTES_UNCACHED;
+
+    // Remap the FD region as normal executable memory
+    VirtualMemoryTable[++Index].PhysicalBase  = PcdGet64 (PcdFdBaseAddress);
+    VirtualMemoryTable[Index].VirtualBase     = VirtualMemoryTable[Index].PhysicalBase;
+    VirtualMemoryTable[Index].Length          = FixedPcdGet32 (PcdFdSize);
+    VirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
     // SOC peripherals after DDR
     VirtualMemoryTable[++Index].PhysicalBase  = QSD8250_PERIPH_BASE;
