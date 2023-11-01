@@ -30,8 +30,8 @@
 #define QSD8250_PERIPH_BASE              0xA0000000
 #define QSD8250_PERIPH_SIZE              0x0C300000
 
-#define FB_ADDR 0x02A00000
-#define FB_SIZE 0x000C0000
+#define FB_ADDR FixedPcdGet32(PcdMipiFrameBufferAddress)
+#define FB_SIZE FixedPcdGet32(PcdMipiFrameBufferWidth)*FixedPcdGet32(PcdMipiFrameBufferHeight)*FixedPcdGet32(PcdMipiFrameBufferPixelBpp)
 
 STATIC struct ReservedMemory {
     EFI_PHYSICAL_ADDRESS         Offset;
