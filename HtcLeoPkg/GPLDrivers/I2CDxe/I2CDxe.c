@@ -43,7 +43,9 @@
 
 // Cached copy of the Hardware Gpio protocol instance
 TLMM_GPIO *gGpio = NULL;
+// Cached copy of the Embedded Clock protocol instance
 EMBEDDED_CLOCK_PROTOCOL  *gClock = NULL;
+// Cached copy of the Hardware Interrupt protocol instance
 EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
 #define DEBUG_I2C 0
@@ -540,25 +542,6 @@ static struct msm_i2c_pdata i2c_pdata = {
 	.i2c_base = (void*)MSM_I2C_BASE,
 };
 
-RETURN_STATUS
-EFIAPI
-MsmI2cInitialize(VOID)
-{
-  EFI_STATUS Status = EFI_SUCCESS;
-
-  // Find the interrupt controller protocol.  ASSERT if not found.
-  Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
-  ASSERT_EFI_ERROR (Status);
-
-  // Find the clock controller protocol.  ASSERT if not found.
-  Status = gBS->LocateProtocol (&gEmbeddedClockProtocolGuid, NULL, (VOID **)&gClock);
-  ASSERT_EFI_ERROR (Status);
-
-  msm_i2c_probe(&i2c_pdata);
-
-  return Status;
-}
-
 HTCLEO_I2C_PROTOCOL gHtcLeoI2CProtocol = {
   msm_i2c_write,
   msm_i2c_read,
@@ -589,6 +572,7 @@ I2CDxeInitialize(
 
   	msm_i2c_probe(&i2c_pdata);
 
+	// Install the i2c protocol onto a new handle
 	Status = gBS->InstallMultipleProtocolInterfaces(
 	&Handle, &gHtcLeoI2CProtocolGuid, &gHtcLeoI2CProtocol, NULL);
 	ASSERT_EFI_ERROR(Status);
