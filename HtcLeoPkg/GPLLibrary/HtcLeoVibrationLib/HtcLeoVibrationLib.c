@@ -20,8 +20,8 @@
 // Cached copy of the Hardware Gpio protocol instance
 TLMM_GPIO *gGpio = NULL;
 
-VOID EFIAPI htcleo_vibrate(unsigned enable){
-  gpio_set(HTCLEO_GPIO_VIBRATOR_ON, enable);
+VOID EFIAPI htcleo_vibrate(unsigned enable) {
+  gGpio->Set(HTCLEO_GPIO_VIBRATOR_ON, enable);
 }
 
 VOID EFIAPI htcleo_vibrate_once(){
@@ -69,4 +69,6 @@ VibrationLibConstructor (
   // Find the gpio controller protocol.  ASSERT if not found.
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
   ASSERT_EFI_ERROR (Status);
+
+  return Status;
 }
