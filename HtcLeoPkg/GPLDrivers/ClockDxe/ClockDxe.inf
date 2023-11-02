@@ -23,6 +23,7 @@
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-missing-braces
 [Sources.common]
+  acpuclock.c
   ClockDxe.c
 
 [Packages]
