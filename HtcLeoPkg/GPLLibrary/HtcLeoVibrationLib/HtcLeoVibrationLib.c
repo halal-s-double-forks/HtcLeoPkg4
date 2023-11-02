@@ -15,7 +15,10 @@
 #include <Library/DebugLib.h>
 #include <Library/gpio.h>
 #include <Library/TimerLib.h>
+#include <Protocol/GpioTlmm.h>
 
+// Cached copy of the Hardware Gpio protocol instance
+TLMM_GPIO *gGpio = NULL;
 
 VOID EFIAPI htcleo_vibrate(unsigned enable){
   gpio_set(HTCLEO_GPIO_VIBRATOR_ON, enable);
@@ -53,4 +56,17 @@ VOID htcleo_vibrate_timer(unsigned msecs)
       m_CallbackTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(msecs));
 
   ASSERT_EFI_ERROR(Status);
+}
+
+RETURN_STATUS
+EFIAPI
+VibrationLibConstructor (
+  VOID
+  )
+{
+  EFI_STATUS Status = EFI_SUCCESS;
+
+  // Find the gpio controller protocol.  ASSERT if not found.
+  Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
+  ASSERT_EFI_ERROR (Status);
 }
