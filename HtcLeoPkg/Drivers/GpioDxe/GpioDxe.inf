@@ -53,7 +53,7 @@
   gEfiBlockIoProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
-  #gHardwareInterruptProtocolGuid
+  gHardwareInterruptProtocolGuid
   gTlmmGpioProtocolGuid
 
 [Pcd]
