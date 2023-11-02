@@ -60,14 +60,9 @@
 // Cached copy of the Hardware Interrupt protocol instance
 EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
-static struct msm_gpio_isr_handler
-{
-	 int_handler handler;
-	 void *arg;
-	 bool pending;
-} gpio_irq_handlers[NR_MSM_GPIOS];
-
-static gpioregs *find_gpio(UINTN n, UINTN *bit)
+static
+gpioregs
+*find_gpio(UINTN n, UINTN *bit)
 {
 	gpioregs *ret = 0;
 	if (n > GPIO_REGS[ARRAY_SIZE(GPIO_REGS) - 1].end)
@@ -105,7 +100,8 @@ gpio_config(UINTN n, UINTN flags)
 	return 0;
 }
 
-void gpio_set(UINTN n, UINTN on)
+VOID
+gpio_set(UINTN n, UINTN on)
 {
 	gpioregs *r;
 	UINTN b = 0;
@@ -138,7 +134,8 @@ gpio_get(UINTN n)
 	return (readl(r->in) & b) ? 1 : 0;
 }
 
-void config_gpio_table(UINT32 *table, int len)
+VOID
+config_gpio_table(UINT32 *table, int len)
 {
 	int n;
 	UINTN id;
@@ -225,17 +222,10 @@ MsmGpioIsr (
 		for (int j = 0; j < 32; j++)
 			if (e & s & (1 << j)) {
 				msm_gpio_irq_ack(r->start + j);
-				gpio_irq_handlers[r->start + j].pending = 1;
 		}
 	}
 	
-	for (UINTN i = 0; i < ARRAY_SIZE(gpio_irq_handlers); i++) {
-		if (gpio_irq_handlers[i].pending) {
-			gpio_irq_handlers[i].pending = 0;
-			if (gpio_irq_handlers[i].handler)
-				gpio_irq_handlers[i].handler(gpio_irq_handlers[i].arg);
-		}
-	}
+	// Handler part stripped
 }
 
 /**
