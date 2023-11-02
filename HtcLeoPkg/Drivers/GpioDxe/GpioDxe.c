@@ -56,9 +56,10 @@
 #include <Chipset/clock.h>
 
 #include <Protocol/GpioTlmm.h>
+#include <Protocol/HardwareInterrupt.h>
 
 // Cached copy of the Hardware Interrupt protocol instance
-//EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
+EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
 static struct msm_gpio_isr_handler
 {
@@ -285,11 +286,11 @@ GpioDxeInitialize(
   ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gTlmmGpioProtocolGuid);
 
   // Find the interrupt controller protocol.  ASSERT if not found.
-  //Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
-  //ASSERT_EFI_ERROR (Status);
+  Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
+  ASSERT_EFI_ERROR (Status);
 
-	msm_gpio_init();
-	DEBUG((EFI_D_INFO, "Gpio init done!\n"));
+  msm_gpio_init();
+  DEBUG((EFI_D_INFO, "Gpio init done!\n"));
 
   // Install the Tlmm GPIO Protocol onto a new handle
   Status = gBS->InstallMultipleProtocolInterfaces (
