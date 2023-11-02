@@ -201,7 +201,6 @@
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
-  # HtcLeoPkg/Drivers/HeartbeatDxe/HeartbeatDxe.inf
 
   MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
   HtcLeoPkg/Drivers/ConSplitterDxe/ConSplitterDxe.inf

@@ -119,7 +119,6 @@ APRIORI DXE {
   INF HtcLeoPkg/Drivers/TimerDxe/TimerDxe.inf
 
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
-  # INF HtcLeoPkg/Drivers/HeartbeatDxe/HeartbeatDxe.inf
 
   # SoC Drivers
   INF HtcLeoPkg/GPLDrivers/ClockDxe/ClockDxe.inf
