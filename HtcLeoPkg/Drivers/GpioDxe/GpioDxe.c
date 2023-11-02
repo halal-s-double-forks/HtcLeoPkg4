@@ -45,7 +45,6 @@
 #include <Library/LKEnvLib.h>
 #include <Library/reg.h>
 #include <Library/adm.h>
-#include <Library/InterruptsLib.h>
 #include <Library/gpio.h>
 #include <Library/pcom.h>
 
@@ -209,7 +208,12 @@ static void msm_gpio_irq_ack(UINTN gpio)
 	msm_gpio_update_both_edge_detect(gpio);
 }
 
-static enum handler_return msm_gpio_isr(void *arg)
+VOID
+EFIAPI
+MsmGpioIsr (
+  IN  HARDWARE_INTERRUPT_SOURCE   Source,
+  IN  EFI_SYSTEM_CONTEXT          SystemContext
+  )
 {
 	UINTN s, e;
 	gpioregs *r;
@@ -232,34 +236,7 @@ static enum handler_return msm_gpio_isr(void *arg)
 				gpio_irq_handlers[i].handler(gpio_irq_handlers[i].arg);
 		}
 	}
-	
-	return INT_RESCHEDULE;
 }
-
-void msm_gpio_init(void)
-{
-	for (UINTN i = 0; i < ARRAY_SIZE(GPIO_REGS); i++) {
-		writel(-1, GPIO_REGS[i].int_clear);
-		writel(0, GPIO_REGS[i].int_en);
-	}
-
-	register_int_handler(INT_GPIO_GROUP1, msm_gpio_isr, NULL);
-	register_int_handler(INT_GPIO_GROUP2, msm_gpio_isr, NULL);
-
-	unmask_interrupt(INT_GPIO_GROUP1);
-	unmask_interrupt(INT_GPIO_GROUP2);
-}
-
-/*void msm_gpio_deinit(void)
-{
-	for (UINTN i = 0; i < ARRAY_SIZE(GPIO_REGS); i++) {
-		writel(-1, GPIO_REGS[i].int_clear);
-		writel(0, GPIO_REGS[i].int_en);
-	}
-	
-	mask_interrupt(INT_GPIO_GROUP1);
-	mask_interrupt(INT_GPIO_GROUP2);
-}*/
 
 /**
  Protocol variable definition
@@ -277,7 +254,7 @@ GpioDxeInitialize(
 	IN EFI_SYSTEM_TABLE   *SystemTable
 )
 {
-	EFI_STATUS  Status = EFI_SUCCESS;
+  EFI_STATUS  Status = EFI_SUCCESS;
   EFI_HANDLE  Handle = NULL;
 
   //
@@ -289,8 +266,17 @@ GpioDxeInitialize(
   Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
   ASSERT_EFI_ERROR (Status);
 
-  msm_gpio_init();
-  DEBUG((EFI_D_INFO, "Gpio init done!\n"));
+  // Clear
+  for (UINTN i = 0; i < ARRAY_SIZE(GPIO_REGS); i++) {
+	MmioWrite32(GPIO_REGS[i].int_clear, -1);
+	MmioWrite32(GPIO_REGS[i].int_en, 0);
+  }
+
+  // Install interrupt handler
+  Status = gInterrupt->RegisterInterruptSource(gInterrupt, INT_GPIO_GROUP1, MsmGpioIsr);
+  ASSERT_EFI_ERROR (Status);
+  Status = gInterrupt->RegisterInterruptSource(gInterrupt, INT_GPIO_GROUP2, MsmGpioIsr);
+  ASSERT_EFI_ERROR (Status);
 
   // Install the Tlmm GPIO Protocol onto a new handle
   Status = gBS->InstallMultipleProtocolInterfaces (
