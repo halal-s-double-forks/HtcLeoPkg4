@@ -44,6 +44,7 @@
   BaseLib
   DebugLib
   UefiBootServicesTableLib
+  MsmPcomLib
   MsmPcomClientLib
   TimerLib
 
