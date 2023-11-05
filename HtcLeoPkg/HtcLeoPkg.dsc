@@ -235,6 +235,7 @@
   HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
   HtcLeoPkg/GPLDrivers/I2CDxe/I2CDxe.inf
   HtcLeoPkg/Drivers/MicroPDxe/MicroPDxe.inf
+  HtcLeoPkg/Drivers/TouchDxe/TouchDxe.inf
 
   #
   # Virtual Keyboard
