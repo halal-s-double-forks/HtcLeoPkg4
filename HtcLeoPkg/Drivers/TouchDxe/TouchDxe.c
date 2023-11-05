@@ -23,9 +23,6 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/BaseMemoryLib.h>
 
-#include <Protocol/BlockIo.h>
-#include <Protocol/DevicePath.h>
-
 #include <Library/LKEnvLib.h>
 #include <Library/reg.h>
 #include <Library/adm.h>
@@ -38,9 +35,12 @@
 #include <Chipset/irqs.h>
 #include <Chipset/clock.h>
 
+#include <Protocol/DevicePath.h>
 #include <Protocol/GpioTlmm.h>
 #include <Protocol/HardwareInterrupt.h>
 #include <Protocol/HtcLeoI2C.h>
+
+#include "TouchDxe.h"
 
 // Cached copy of the i2c protocol
 HTCLEO_I2C_PROTOCOL *gI2C = NULL;
@@ -51,21 +51,28 @@ TLMM_GPIO_PROTOCOL *gGpio = NULL;
 // Cached copy of the Hardware Interrupt protocol instance
 EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
-#define TOUCH_TYPE_UNKNOWN  0
-#define TOUCH_TYPE_B8       1
-#define TOUCH_TYPE_68       2
-#define TOUCH_TYPE_2A       3
+/*
+ * IRQ -> GPIO mapping table
+ *
+ * TODO: Add into a lib (?)
+ */
+static signed char irq2gpio[32] = {
+	-1, -1, -1, -1, -1, -1,  0,  1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1,  2,  3,  4,  5,  6,
+	 7,  8,  9, 10, 11, 12, -1, -1,
+};
 
-int ts_type;
+int gpio_to_irq(int gpio)
+{
+	int irq;
 
-#define TYPE_2A_DEVID	(0x2A >> 1)
-#define TYPE_B8_DEVID	(0xB8 >> 1)
-#define TYPE_68_DEVID	(0x68 >> 1)
-
-#define MAKEWORD(a, b)  ((uint16_t)(((uint8_t)(a)) | ((uint16_t)((uint8_t)(b))) << 8))
-
-static struct timer poll_timer;
-//static wait_queue_t ts_work __UNUSED;
+	for (irq = 0; irq < 32; irq++) {
+		if (irq2gpio[irq] == gpio)
+			return irq;
+	}
+	return -2;
+}
 
 static int ts_i2c_read_sec(uint8_t dev, uint8_t addr, size_t count, uint8_t *buf)
 {
@@ -81,11 +88,10 @@ static int ts_i2c_read_sec(uint8_t dev, uint8_t addr, size_t count, uint8_t *buf
 	msg[1].len   = count;
 	msg[1].buf   = buf;
 	
-	if (msm_i2c_xfer(msg, 2) < 0) {
-		dprintf(INFO, "TS: ts_i2c_read_sec FAILED!\n");
+	if (gI2C->Xfer(msg, 2) < 0) {
+		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_sec FAILED!\n"));
 		return 0;
 	}
-	
 	return 1;
 }
 
@@ -98,8 +104,8 @@ static int ts_i2c_read_master(size_t count, uint8_t *buf)
 	msg[0].len   = count;
 	msg[0].buf   = buf;
 	
-	if (msm_i2c_xfer(msg, 1) < 0) {
-		dprintf(INFO, "TS: ts_i2c_read_master FAILED!\n");
+	if (gI2C->Xfer(msg, 1) < 0) {
+		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_master FAILED!\n"));
 		return 0;
 	}
 	
@@ -108,46 +114,46 @@ static int ts_i2c_read_master(size_t count, uint8_t *buf)
 
 static void htcleo_ts_reset(void)
 {
-	while (gpio_get(HTCLEO_GPIO_TS_POWER)) {
-		gpio_set(HTCLEO_GPIO_TS_SEL, 1);
-		gpio_set(HTCLEO_GPIO_TS_POWER, 0);
-		gpio_set(HTCLEO_GPIO_TS_MULT, 0);
-		gpio_set(HTCLEO_GPIO_H2W_CLK, 0);
-		mdelay(10);
+	while (gGpio->Get(HTCLEO_GPIO_TS_POWER)) {
+		gGpio->Set(HTCLEO_GPIO_TS_SEL, 1);
+		gGpio->Set(HTCLEO_GPIO_TS_POWER, 0);
+		gGpio->Set(HTCLEO_GPIO_TS_MULT, 0);
+		gGpio->Set(HTCLEO_GPIO_H2W_CLK, 0);
+		MicroSecondDelay(10);
 	}
-	gpio_set(HTCLEO_GPIO_TS_MULT, 1);
-	gpio_set(HTCLEO_GPIO_H2W_CLK, 1);
+	gGpio->Set(HTCLEO_GPIO_TS_MULT, 1);
+	gGpio->Set(HTCLEO_GPIO_H2W_CLK, 1);
 
-	while (!gpio_get(HTCLEO_GPIO_TS_POWER)) {
-		gpio_set(HTCLEO_GPIO_TS_POWER, 1);
+	while (!gGpio->Get(HTCLEO_GPIO_TS_POWER)) {
+		gGpio->Set(HTCLEO_GPIO_TS_POWER, 1);
 	}
-	mdelay(20);
-	while (gpio_get(HTCLEO_GPIO_TS_IRQ)) {
-		mdelay(10);
+	MicroSecondDelay(20);
+	while (gGpio->Get(HTCLEO_GPIO_TS_IRQ)) {
+		MicroSecondDelay(10);
 	}
 
-	while (gpio_get(HTCLEO_GPIO_TS_SEL)) {
-		gpio_set(HTCLEO_GPIO_TS_SEL, 0);
+	while (gGpio->Get(HTCLEO_GPIO_TS_SEL)) {
+		gGpio->Set(HTCLEO_GPIO_TS_SEL, 0);
 	}
-	mdelay(300);
-	dprintf(INFO, "TS: reset done\n");
+	MicroSecondDelay(300);
+	DEBUG((EFI_D_ERROR, "TS: reset done\n"));
 }
 
 static void htcleo_ts_detect_type(void)
 {
 	uint8_t bt[4];
 	/* if (ts_i2c_read_sec(TYPE_68_DEVID, 0x00, 1, bt)) {
-		dprintf(INFO, "TS: DETECTED TYPE 68\n");
+		DEBUG((EFI_D_ERROR, "TS: DETECTED TYPE 68\n"));
 		ts_type = TOUCH_TYPE_68;
 		return;
 	}
 	if (ts_i2c_read_sec(TYPE_B8_DEVID, 0x00, 1, bt)) {
-		dprintf(INFO, "TS: DETECTED TYPE B8\n");
+		DEBUG((EFI_D_ERROR, "TS: DETECTED TYPE B8\n"));
 		ts_type = TOUCH_TYPE_B8;
 		return;
 	} */
 	if (ts_i2c_read_master(4, bt) && bt[0] == 0x55 ) {
-		dprintf(INFO, "TS: DETECTED TYPE 2A\n");
+		DEBUG((EFI_D_ERROR, "TS: DETECTED TYPE 2A\n"));
 		ts_type = TOUCH_TYPE_2A;
 		return;
 	}
@@ -168,16 +174,22 @@ static void htcleo_init_ts(void)
 	msg.len   = 3;
 	msg.buf   = bt;
 	
-	msm_i2c_xfer(&msg, 1);
-	dprintf(INFO, "TS: init\n");
+	gI2C->Xfer(&msg, 1);
+	DEBUG((EFI_D_ERROR, "TS: init\n"));
 }
 
 void htcleo_ts_deinit(void) {
-	gpio_set(HTCLEO_GPIO_TS_POWER, 0);
+	gGpio->Set(HTCLEO_GPIO_TS_POWER, 0);
 }
 
 //static int htcleo_ts_work_func(void *arg)
-static enum handler_return ts_poll_fn(struct timer *timer, time_t now, void *arg)
+//static enum handler_return ts_poll_fn(struct timer *timer, time_t now, void *arg)
+VOID
+EFIAPI
+TouchPollFunction (
+  IN  HARDWARE_INTERRUPT_SOURCE   Source,
+  IN  EFI_SYSTEM_CONTEXT          SystemContext
+  )
 {
 	uint8_t buf[9];
 	uint32_t ptcount = 0;
@@ -185,11 +197,11 @@ static enum handler_return ts_poll_fn(struct timer *timer, time_t now, void *arg
 	uint32_t pty[2];
 
 	if (!ts_i2c_read_master(9, buf)) {
-		dprintf(INFO, "TS: ReadPos failed\n");
+		DEBUG((EFI_D_ERROR, "TS: ReadPos failed\n"));
 		goto error;
 	}
 	if (buf[0] != 0x5A) {
-		dprintf(INFO, "TS: ReadPos wrmark\n");
+		DEBUG((EFI_D_ERROR, "TS: ReadPos wrmark\n"));
 		goto error;
 	}
 	ptcount = (buf[8] >> 1) & 3;
@@ -205,10 +217,18 @@ static enum handler_return ts_poll_fn(struct timer *timer, time_t now, void *arg
 		pty[1] = MAKEWORD(buf[6], (buf[4] & 0x0F) >> 0);
 	}
 #if 1 //Set to 0 if ts driver is working(check splash.h too for virtual buttons logo)
-	if (ptcount == 0) dprintf(INFO, "TS: not pressed\n");
-	else if (ptcount == 1) dprintf(INFO, "TS: pressed1 (%d, %d)\n", ptx[0], pty[0]);
-	else if (ptcount == 2) dprintf(INFO, "TS: pressed2 (%d, %d) (%d, %d)\n", ptx[0], pty[0], ptx[1], pty[1]);
-	else dprintf(INFO, "TS: BUGGY!\n");
+	if (ptcount == 0) {
+		DEBUG((EFI_D_ERROR, "TS: not pressed\n"));
+	}
+	else if (ptcount == 1) {
+		DEBUG((EFI_D_ERROR, "TS: pressed1 (%d, %d)\n", ptx[0], pty[0]));
+	}
+	else if (ptcount == 2) {
+		DEBUG((EFI_D_ERROR, "TS: pressed2 (%d, %d) (%d, %d)\n", ptx[0], pty[0], ptx[1], pty[1]));
+	}
+	else {
+		DEBUG((EFI_D_ERROR, "TS: BUGGY!\n"));
+	}
 #else
 	/*
 	 * ...WIP...
@@ -230,72 +250,37 @@ static enum handler_return ts_poll_fn(struct timer *timer, time_t now, void *arg
 			keys_set_state(key_code);
 	}
 #endif
-	enter_critical_section();
+	/*enter_critical_section();
 	timer_set_oneshot(timer, 125, ts_poll_fn, NULL);
-	exit_critical_section();
+	exit_critical_section();*/
 
 error:
-	enter_critical_section();
-	mask_interrupt(gpio_to_irq(HTCLEO_GPIO_TS_IRQ));
-	exit_critical_section();
-	return INT_RESCHEDULE;
+	//enter_critical_section();
+	gInterrupt->DisableInterruptSource(gInterrupt, gpio_to_irq(HTCLEO_GPIO_TS_IRQ));
+	//exit_critical_section();
 }
+
 /* 
-static enum handler_return htcleo_ts_irq_handler(void *arg)
+//static enum handler_return htcleo_ts_irq_handler(void *arg)
+VOID
+EFIAPI
+TouchIrqHandler (
+  IN  HARDWARE_INTERRUPT_SOURCE   Source,
+  IN  EFI_SYSTEM_CONTEXT          SystemContext
+  )
 {
-	//zzz
-	enter_critical_section();
-	unmask_interrupt(gpio_to_irq(HTCLEO_GPIO_TS_IRQ));
-	wait_queue_wake_one(&ts_work, 1, 0);
-	exit_critical_section();
+	//enter_critical_section();
+	gInterrupt->EnableInterruptSource(gInterrupt, gpio_to_irq(HTCLEO_GPIO_TS_IRQ));
+	//wait_queue_wake_one(&ts_work, 1, 0);
+	//exit_critical_section();
 	
-	return INT_RESCHEDULE;
+	gInterrupt->EndOfInterrupt(gInterrupt, gpio_to_irq(HTCLEO_GPIO_TS_IRQ));
 }
  */
 static uint32_t touch_on_gpio_table[] =
 {
 	MSM_GPIO_CFG(HTCLEO_GPIO_TS_IRQ, 0, PCOM_GPIO_CFG_INPUT, PCOM_GPIO_CFG_PULL_UP, PCOM_GPIO_CFG_8MA),
 };
-
-int htcleo_ts_probe(void)
-{
-	//wait_queue_init(&ts_work);
-	
-	config_gpio_table(touch_on_gpio_table, ARRAY_SIZE(touch_on_gpio_table));
-	gpio_set(HTCLEO_GPIO_TS_SEL, 1);
-	gpio_set(HTCLEO_GPIO_TS_POWER, 0);
-	gpio_set(HTCLEO_GPIO_TS_MULT, 0);
-	gpio_set(HTCLEO_GPIO_H2W_CLK, 0);
-	gpio_config(HTCLEO_GPIO_TS_IRQ, GPIO_INPUT);
-
-	mdelay(100);
-
-	htcleo_ts_reset();
-	htcleo_ts_detect_type();
-	if (ts_type == TOUCH_TYPE_68 || ts_type == TOUCH_TYPE_B8) {
-		dprintf(INFO, "TS: NOT SUPPORTED\n");
-		goto error;
-	} else
-	if (ts_type == TOUCH_TYPE_UNKNOWN) {
-		dprintf(INFO, "TS: NOT DETECTED\n");
-		goto error;
-	}
-	htcleo_init_ts();
-
-	enter_critical_section();
-	//register_int_handler(gpio_to_irq(HTCLEO_GPIO_TS_IRQ), htcleo_ts_irq_handler, NULL);
-	timer_initialize(&poll_timer);
-	timer_set_oneshot(&poll_timer, 0, ts_poll_fn, NULL);
-	exit_critical_section();
-	
-	return 1;
-	
-error:
-	htcleo_ts_deinit();
-	//wait_queue_destroy(&ts_work);
-	return 0;
-}
-
 
 EFI_STATUS
 EFIAPI
@@ -305,7 +290,7 @@ GpioDxeInitialize(
 )
 {
   EFI_STATUS  Status = EFI_SUCCESS;
-  EFI_HANDLE  Handle = NULL;
+  //EFI_HANDLE  Handle = NULL;
 
   //
   // Make sure the Gpio protocol has not been installed in the system yet.
@@ -324,6 +309,40 @@ GpioDxeInitialize(
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
   ASSERT_EFI_ERROR (Status);
 
+  //htcleo_ts_probe:
+  gGpio->ConfigTable(touch_on_gpio_table, ARRAY_SIZE(touch_on_gpio_table));
+  gGpio->Set(HTCLEO_GPIO_TS_SEL, 1);
+  gGpio->Set(HTCLEO_GPIO_TS_POWER, 0);
+  gGpio->Set(HTCLEO_GPIO_TS_MULT, 0);
+  gGpio->Set(HTCLEO_GPIO_H2W_CLK, 0);
+  gGpio->Config(HTCLEO_GPIO_TS_IRQ, GPIO_INPUT);
+
+  MicroSecondDelay(100);
+
+  htcleo_ts_reset();
+  htcleo_ts_detect_type();
+  if (ts_type == TOUCH_TYPE_68 || ts_type == TOUCH_TYPE_B8) {
+	DEBUG((EFI_D_ERROR, "TS: NOT SUPPORTED\n"));
+	goto error;
+  } else
+  if (ts_type == TOUCH_TYPE_UNKNOWN) {
+	DEBUG((EFI_D_ERROR, "TS: NOT DETECTED\n"));
+	goto error;
+  }
+  htcleo_init_ts();
+
+  //gInterrupt->RegisterInterruptSource(gInterrupt, gpio_to_irq(HTCLEO_GPIO_TS_IRQ), TouchIrqHandler);
+
+	/*
+	enter_critical_section();
+	//register_int_handler(gpio_to_irq(HTCLEO_GPIO_TS_IRQ), htcleo_ts_irq_handler, NULL);
+	timer_initialize(&poll_timer);
+	timer_set_oneshot(&poll_timer, 0, ts_poll_fn, NULL);
+	exit_critical_section();
+	*/
+	
+  Status = EFI_SUCCESS;
+
   // Install the Tlmm GPIO Protocol onto a new handle
   /*Status = gBS->InstallMultipleProtocolInterfaces (
                   &Handle,
@@ -334,6 +353,13 @@ GpioDxeInitialize(
   if (EFI_ERROR (Status)) {
     Status = EFI_OUT_OF_RESOURCES;
   }*/
+	
+error:
+  DEBUG((EFI_D_ERROR, "TS: ERROR, DEINITING!\n"));
+  MicroSecondDelay(100000);
+  htcleo_ts_deinit();
+  //wait_queue_destroy(&ts_work);
 
+  Status = -1;
   return Status;
 }
