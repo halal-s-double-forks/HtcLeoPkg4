@@ -40,29 +40,22 @@
 #include <Protocol/HardwareInterrupt.h>
 #include <Protocol/HtcLeoI2C.h>
 
+#include <Device/Gpio.h>
+
 #include "TouchDxe.h"
 
 // Cached copy of the i2c protocol
 HTCLEO_I2C_PROTOCOL *gI2C = NULL;
 
 // Cached copy of the gpio protocol
-TLMM_GPIO_PROTOCOL *gGpio = NULL;
+TLMM_GPIO *gGpio = NULL;
 
 // Cached copy of the Hardware Interrupt protocol instance
 EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
 /*
- * IRQ -> GPIO mapping table
- *
  * TODO: Add into a lib (?)
  */
-static signed char irq2gpio[32] = {
-	-1, -1, -1, -1, -1, -1,  0,  1,
-	-1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1,  2,  3,  4,  5,  6,
-	 7,  8,  9, 10, 11, 12, -1, -1,
-};
-
 int gpio_to_irq(int gpio)
 {
 	int irq;
@@ -284,7 +277,7 @@ static uint32_t touch_on_gpio_table[] =
 
 EFI_STATUS
 EFIAPI
-GpioDxeInitialize(
+TouchDxeInitialize(
 	IN EFI_HANDLE         ImageHandle,
 	IN EFI_SYSTEM_TABLE   *SystemTable
 )
