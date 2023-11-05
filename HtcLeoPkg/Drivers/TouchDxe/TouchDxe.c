@@ -335,6 +335,7 @@ TouchDxeInitialize(
 	*/
 	
   Status = EFI_SUCCESS;
+  return Status;
 
   // Install the Tlmm GPIO Protocol onto a new handle
   /*Status = gBS->InstallMultipleProtocolInterfaces (
@@ -352,6 +353,8 @@ error:
   MicroSecondDelay(100000);
   htcleo_ts_deinit();
   //wait_queue_destroy(&ts_work);
+
+  for(;;) {};
 
   Status = -1;
   return Status;

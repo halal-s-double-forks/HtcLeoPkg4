@@ -14,7 +14,7 @@
 [Defines]
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = TouchDxe
-  FILE_GUID                      = A9AE7F06-35A1-40AF-A894-7CF3BA488B2F
+  FILE_GUID                      = A9AE7F06-35A1-40AF-A894-8CF3BA488B2F
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
 
