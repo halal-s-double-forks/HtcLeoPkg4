@@ -25,9 +25,9 @@
 UINT64  mSystemMemoryEnd = FixedPcdGet64 (PcdSystemMemoryBase) +
                            FixedPcdGet64 (PcdSystemMemorySize) - 1;
 
-UINTN gWidth = FixedPcdGet32(PcdMipiFrameBufferWidth);
-UINTN gHeight = FixedPcdGet32(PcdMipiFrameBufferHeight);
-UINTN gBpp = FixedPcdGet32(PcdMipiFrameBufferPixelBpp);
+UINTN Width = FixedPcdGet32(PcdMipiFrameBufferWidth);
+UINTN Height = FixedPcdGet32(PcdMipiFrameBufferHeight);
+UINTN Bpp = FixedPcdGet32(PcdMipiFrameBufferPixelBpp);
 
 VOID
 PaintScreen(
@@ -38,12 +38,12 @@ PaintScreen(
 	char* Pixels = (void*)FixedPcdGet32(PcdMipiFrameBufferAddress);
 
 	// Set to black color.
-	for (UINTN i = 0; i < gWidth; i++)
+	for (UINTN i = 0; i < Width; i++)
 	{
-		for (UINTN j = 0; j < gHeight; j++)
+		for (UINTN j = 0; j < Height; j++)
 		{
 			// Set pixel bit
-			for (UINTN p = 0; p < (gBpp / 8); p++)
+			for (UINTN p = 0; p < (Bpp / 8); p++)
 			{
 				*Pixels = (unsigned char)BgColor;
 				BgColor = BgColor >> 8;
@@ -59,7 +59,7 @@ ReconfigFb()
   // Format (32bpp)
   MmioWrite32(MDP_DMA_P_CONFIG, DMA_PACK_ALIGN_LSB|DMA_PACK_PATTERN_RGB|DMA_DITHER_EN|DMA_OUT_SEL_LCDC|DMA_IBUF_FORMAT_xRGB8888_OR_ARGB8888|DMA_DSTC0G_8BITS|DMA_DSTC1B_8BITS|DMA_DSTC2R_8BITS);
   // Stride
-  MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, 4 * FixedPcdGet32(PcdMipiFrameBufferWidth));
+  MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, 4 * Width);
 }
 
 VOID
