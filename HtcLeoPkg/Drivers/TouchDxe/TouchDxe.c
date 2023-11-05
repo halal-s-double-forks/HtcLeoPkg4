@@ -34,6 +34,7 @@
 #include <Chipset/iomap.h>
 #include <Chipset/irqs.h>
 #include <Chipset/clock.h>
+#include <Chipset/msm_i2c.h>
 
 #include <Protocol/DevicePath.h>
 #include <Protocol/GpioTlmm.h>
@@ -81,7 +82,16 @@ static int ts_i2c_read_sec(uint8_t dev, uint8_t addr, size_t count, uint8_t *buf
 	msg[1].len   = count;
 	msg[1].buf   = buf;
 	
-	if (gI2C->Xfer(msg, 2) < 0) {
+	for (retry = 0; retry <= MSM_I2C_READ_RETRY_TIMES; retry++) {
+		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_sec: retrying %p time\n", retry));
+		if (gI2C->Xfer(msg, 2) >= 0) {
+			DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_sec SUCCESS!\n"));
+			break;
+		}
+		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_sec FAIL!\n"));
+		MicroSecondDelay(5);
+	}
+	if (retry > MSM_I2C_WRITE_RETRY_TIMES) {
 		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_sec FAILED!\n"));
 		return 0;
 	}
@@ -97,7 +107,16 @@ static int ts_i2c_read_master(size_t count, uint8_t *buf)
 	msg[0].len   = count;
 	msg[0].buf   = buf;
 	
-	if (gI2C->Xfer(msg, 1) < 0) {
+	for (retry = 0; retry <= MSM_I2C_READ_RETRY_TIMES; retry++) {
+		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_master: retrying %p time\n", retry));
+		if (gI2C->Xfer(msg, 1) >= 0) {
+			DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_master SUCCESS!\n"));
+			break;
+		}
+		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_master FAIL!\n"));
+		MicroSecondDelay(5);
+	}
+	if (retry > MSM_I2C_WRITE_RETRY_TIMES) {
 		DEBUG((EFI_D_ERROR, "TS: ts_i2c_read_master FAILED!\n"));
 		return 0;
 	}
