@@ -154,7 +154,7 @@ static void htcleo_ts_reset(void)
 static void htcleo_ts_detect_type(void)
 {
 	uint8_t bt[4];
-	/* if (ts_i2c_read_sec(TYPE_68_DEVID, 0x00, 1, bt)) {
+	if (ts_i2c_read_sec(TYPE_68_DEVID, 0x00, 1, bt)) {
 		DEBUG((EFI_D_ERROR, "TS: DETECTED TYPE 68\n"));
 		ts_type = TOUCH_TYPE_68;
 		return;
@@ -163,7 +163,7 @@ static void htcleo_ts_detect_type(void)
 		DEBUG((EFI_D_ERROR, "TS: DETECTED TYPE B8\n"));
 		ts_type = TOUCH_TYPE_B8;
 		return;
-	} */
+	}
 	if (ts_i2c_read_master(4, bt) && bt[0] == 0x55 ) {
 		DEBUG((EFI_D_ERROR, "TS: DETECTED TYPE 2A\n"));
 		ts_type = TOUCH_TYPE_2A;
