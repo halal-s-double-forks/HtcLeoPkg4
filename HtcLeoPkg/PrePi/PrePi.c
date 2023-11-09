@@ -60,6 +60,9 @@ ReconfigFb()
   MmioWrite32(MDP_DMA_P_CONFIG, DMA_PACK_ALIGN_LSB|DMA_PACK_PATTERN_RGB|DMA_DITHER_EN|DMA_OUT_SEL_LCDC|DMA_IBUF_FORMAT_xRGB8888_OR_ARGB8888|DMA_DSTC0G_8BITS|DMA_DSTC1B_8BITS|DMA_DSTC2R_8BITS);
   // Stride
   MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, 4 * FixedPcdGet32(PcdMipiFrameBufferWidth));
+  //Ensure all transfers finished
+  ArmInstructionSynchronizationBarrier();
+  ArmDataMemoryBarrier();
 }
 
 VOID
@@ -79,11 +82,11 @@ PrePiMain (
   // Initialize the architecture specific bits
   ArchInitialize ();
 
-  // Reconfigure the framebuffer to 32bpp BGRA8888
-  ReconfigFb();
-
   // Paint the screen to black
   PaintScreen(FB_BGRA8888_BLACK);
+
+  // Reconfigure the framebuffer to 32bpp BGRA8888
+  ReconfigFb();
 
   // There are still a few things to do
   /* enable cp10 and cp11 */
