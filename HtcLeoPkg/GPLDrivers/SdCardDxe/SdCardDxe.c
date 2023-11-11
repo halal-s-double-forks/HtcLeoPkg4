@@ -1022,7 +1022,7 @@ STATIC UINT32 MmcReadInternal
     ASSERT(!(DataAddr % BlockSize));
     ASSERT(!(DataLen % BlockSize));
 
-    WriteBackInvalidateDataCacheRange(Buf, DataLen);
+    //WriteBackInvalidateDataCacheRange(Buf, DataLen);
 
     // Set size 
     ReadSize = BlockSize;
@@ -1148,7 +1148,7 @@ STATIC UINT32 MmcWriteInternal
     ASSERT(!(DataAddr % BlockSize));
     ASSERT(!(DataLen % BlockSize));
 
-    WriteBackInvalidateDataCacheRange(Buf, DataLen);
+    //WriteBackInvalidateDataCacheRange(Buf, DataLen);
 
     // Set size 
     ReadSize = BlockSize;
