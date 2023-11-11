@@ -690,14 +690,14 @@ SdCardInit()
     // SD Init
     if (!SDCn_init(SDC_INSTANCE)) {
 		DEBUG((EFI_D_ERROR,"SD - error initializing (SDCn_init)\n"));
-		return -1;
+		return EFI_D_ERROR;
     }
 	DEBUG((EFI_D_ERROR,"Controller inited\n"));
 
     // Run card ID sequence
     if (!card_identification_selection(cid, &rca, &dummy)) {
 		DEBUG((EFI_D_ERROR,"SD - error initializing (card_identification_selection)\n"));
-		return -1;
+		return EFI_D_ERROR;
     }
 
     // Change SD clock configuration, set PWRSAVE and FLOW_ENA
@@ -705,7 +705,7 @@ SdCardInit()
 
     if (!card_transfer_init(rca, csd, cid)) {
 		DEBUG((EFI_D_ERROR,"SD - error initializing (card_transfer_init)\n"));
-		return -1;
+		return EFI_D_ERROR;
     }
 
     // Card is now in four bit mode, do the same with the clock
@@ -715,7 +715,7 @@ SdCardInit()
 
     if (!read_SD_status(rca)) {
 		DEBUG((EFI_D_ERROR,"SD - error reading SD status\n\r"));
-		return -1;
+		return EFI_D_ERROR;
     }
 	
     // The card is now in data transfer mode, standby state.
@@ -737,7 +737,7 @@ SdCardInit()
 
     if (!card_set_block_size(BLOCK_SIZE)) {
 		DEBUG((EFI_D_ERROR, "SD - Error setting block size\n\r"));
-		return -1;
+		return EFI_D_ERROR;
     }
 
     // Valid SD card found
@@ -863,7 +863,7 @@ mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 		if (!read_a_block(start, dst))
 		{
 			DEBUG((EFI_D_ERROR, "%s: Failed to read blocks\n", __func__));
-			return -1;
+			return 0;
 		}
 		blocks_todo -= cur;
 		start += cur;
@@ -871,7 +871,7 @@ mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 	} 
 	while (blocks_todo > 0);
 
-	return EFI_SUCCESS;
+	return blkcnt;
 }
 
 UINTN
@@ -885,7 +885,7 @@ mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 		if (!write_a_block(start, dst, rca))
 		{
 			DEBUG((EFI_D_ERROR, "%s: Failed to read blocks\n", __func__));
-			return -1;
+			return 0;
 		}
 		blocks_todo -= cur;
 		start += cur;
@@ -893,8 +893,10 @@ mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 	} 
 	while (blocks_todo > 0);
 
-	return EFI_SUCCESS;
+	return blkcnt;
 }
+
+/* lk func end */
 
 EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
 {
@@ -1006,7 +1008,7 @@ MMCHSReset(
 	IN BOOLEAN                        ExtendedVerification
 )
 {
-	return EFI_UNSUPPORTED;
+	return EFI_SUCCESS;
 }
 
 /*
@@ -1022,23 +1024,24 @@ STATIC UINT32 MmcReadInternal
     UINT32 DataLen
 )
 {
-    EFI_STATUS Status = EFI_SUCCESS;
+    UINT32 Ret = 0;
+    UINT32 BlockSize = gMMCHSMedia.BlockSize;
     UINT32 ReadSize = 0;
     UINT8 *Sptr = (UINT8 *) Buf;
 
-    ASSERT(!(DataAddr % gMMCHSMedia.BlockSize));
-    ASSERT(!(DataLen % gMMCHSMedia.BlockSize));
+    ASSERT(!(DataAddr % BlockSize));
+    ASSERT(!(DataLen % BlockSize));
 
     // Set size 
-    ReadSize = gMMCHSMedia.BlockSize;
+    ReadSize = BlockSize;
 
     while (DataLen > ReadSize) 
     {
-        Status = mmc_bread((DataAddr / gMMCHSMedia.BlockSize), (ReadSize / gMMCHSMedia.BlockSize), (VOID *) Sptr);
-        if (Status)
+        Ret = mmc_bread((DataAddr / BlockSize), (ReadSize / BlockSize), (VOID *) Sptr);
+        if (Ret == 0)
         {
-            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / gMMCHSMedia.BlockSize)));
-            return Status;
+            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / BlockSize)));
+            return 0;
         }
         Sptr += ReadSize;
         DataAddr += ReadSize;
@@ -1047,14 +1050,14 @@ STATIC UINT32 MmcReadInternal
 
     if (DataLen)
     {
-        Status = mmc_bread((DataAddr / gMMCHSMedia.BlockSize), (DataLen / gMMCHSMedia.BlockSize), (VOID *) Sptr);
-        if (Status)
+        Ret = mmc_bread((DataAddr / BlockSize), (DataLen / BlockSize), (VOID *) Sptr);
+        if (Ret == 0)
         {
-            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / gMMCHSMedia.BlockSize)));
-            return Status;
+            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / BlockSize)));
+            return 1;
         }
     }
-    return Status;
+    return 1;
 }
 
 
@@ -1092,6 +1095,7 @@ MMCHSReadBlocks(
 )
 {
 	EFI_STATUS Status = EFI_SUCCESS;
+	UINTN      ret = 0;
 
 	if (BufferSize % gMMCHSMedia.BlockSize != 0) 
     {
@@ -1111,20 +1115,20 @@ MMCHSReadBlocks(
     {
 		DEBUG((EFI_D_ERROR, "MMCHSReadBlocks: BufferSize = 0\n"));
     	MicroSecondDelay(5000);
-        return EFI_INVALID_PARAMETER;
+        return EFI_SUCCESS;
     }
 
-	Status = MmcReadInternal((UINT64) Lba * 512, Buffer, BufferSize);
+	ret = MmcReadInternal((UINT64) Lba * 512, Buffer, BufferSize);
 	
-	if (Status)
+	if (ret == 1)
     {
-		DEBUG((EFI_D_ERROR, "MMCHSReadBlocks: Read error!\n"));
-        MicroSecondDelay(5000);
-        return EFI_DEVICE_ERROR;
+        return EFI_SUCCESS;
     }
     else
     {
-        return EFI_SUCCESS;
+        DEBUG((EFI_D_ERROR, "MMCHSReadBlocks: Read error!\n"));
+        MicroSecondDelay(5000);
+        return EFI_DEVICE_ERROR;
     }
     
 	return Status;
@@ -1143,23 +1147,24 @@ STATIC UINT32 MmcWriteInternal
     UINT32 DataLen
 )
 {
-    EFI_STATUS Status = EFI_SUCCESS;
+    UINT32 Ret = 0;
+    UINT32 BlockSize = gMMCHSMedia.BlockSize;
     UINT32 ReadSize = 0;
     UINT8 *Sptr = (UINT8 *) Buf;
 
-    ASSERT(!(DataAddr % gMMCHSMedia.BlockSize));
-    ASSERT(!(DataLen % gMMCHSMedia.BlockSize));
+    ASSERT(!(DataAddr % BlockSize));
+    ASSERT(!(DataLen % BlockSize));
 
     // Set size 
-    ReadSize = gMMCHSMedia.BlockSize;
+    ReadSize = BlockSize;
 
     while (DataLen > ReadSize) 
     {
-        Status = mmc_bwrite((DataAddr / gMMCHSMedia.BlockSize), (ReadSize / gMMCHSMedia.BlockSize), (VOID *) Sptr);
-        if (Status)
+        Ret = mmc_bwrite((DataAddr / BlockSize), (ReadSize / BlockSize), (VOID *) Sptr);
+        if (Ret == 0)
         {
-            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / gMMCHSMedia.BlockSize)));
-            return Status;
+            DEBUG((EFI_D_ERROR, "Failed Reading block @ %x\n",(UINTN) (DataAddr / BlockSize)));
+            return 0;
         }
         Sptr += ReadSize;
         DataAddr += ReadSize;
@@ -1168,14 +1173,14 @@ STATIC UINT32 MmcWriteInternal
 
     if (DataLen)
     {
-        Status = mmc_bwrite((DataAddr / gMMCHSMedia.BlockSize), (DataLen / gMMCHSMedia.BlockSize), (VOID *) Sptr);
-        if (Status)
+        Ret = mmc_bwrite((DataAddr / BlockSize), (DataLen / BlockSize), (VOID *) Sptr);
+        if (Ret == 0)
         {
-            DEBUG((EFI_D_ERROR, "Failed writing block @ %x\n",(UINTN) (DataAddr / gMMCHSMedia.BlockSize)));
-            return Status;
+            DEBUG((EFI_D_ERROR, "Failed writing block @ %x\n",(UINTN) (DataAddr / BlockSize)));
+            return 1;
         }
     }
-    return Status;
+    return 1;
 }
 
 /**
@@ -1209,6 +1214,7 @@ MMCHSWriteBlocks(
 )
 {
 	EFI_STATUS Status = EFI_SUCCESS;
+	UINTN      ret = 0;
 
 	if (BufferSize % gMMCHSMedia.BlockSize != 0) 
     {
@@ -1231,7 +1237,18 @@ MMCHSWriteBlocks(
         return EFI_SUCCESS;
     }
 
-	Status = MmcWriteInternal((UINT64) Lba * 512, Buffer, BufferSize);
+	ret = MmcWriteInternal((UINT64) Lba * 512, Buffer, BufferSize);
+	
+	if (ret == 1)
+    {
+        return EFI_SUCCESS;
+    }
+    else
+    {
+        DEBUG((EFI_D_ERROR, "MMCHSWriteBlocks: Write error!\n"));
+        MicroSecondDelay(5000);
+        return EFI_DEVICE_ERROR;
+    }
 	
 	return Status;
 }
@@ -1252,7 +1269,7 @@ MMCHSFlushBlocks(
 	IN EFI_BLOCK_IO_PROTOCOL  *This
 )
 {
-	return EFI_UNSUPPORTED;
+	return EFI_SUCCESS;
 }
 
 
@@ -1284,13 +1301,14 @@ SdCardInitialize(
         DEBUG((EFI_D_ERROR, "SD Card inserted!\n"));
         SdCardInit();
 
-        UINT8 BlkDump[512] = {0};
+        UINT8 BlkDump[512];
+		ZeroMem(BlkDump, 512);
 		BOOLEAN FoundMbr = FALSE;
 
 		for (UINTN i = 0; i <= MIN(gMMCHSMedia.LastBlock, 50); i++)
 		{
-            Status = mmc_bread(i, 1, &BlkDump);
-            if (Status == EFI_SUCCESS)
+            int blk = mmc_bread(i, 1, &BlkDump);
+            if (blk)
             {
                 if (BlkDump[510] == 0x55 && BlkDump[511] == 0xAA)
                 {
@@ -1298,6 +1316,7 @@ SdCardInitialize(
                     FoundMbr = TRUE;
                     break;
                 }
+                DEBUG((EFI_D_INFO, "MBR not found at %d \n", i));
             }
 		}    
         if (!FoundMbr)
