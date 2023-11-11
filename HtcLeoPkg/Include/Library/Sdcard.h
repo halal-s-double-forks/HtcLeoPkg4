@@ -66,6 +66,13 @@
 //#include "list.h"
 //#include "part.h"
 
+/* Function prototype */
+static void mmc_decode_csd(UINT32 * resp);
+static void mmc_decode_cid(UINT32 * resp);
+
+#define SWITCH_CHECK  (0 << 31)
+#define SWITCH_SET    (1 << 31)
+
 // Choose the SD controller to use. SDC1, 2, 3, or 4.
 #define SDC_INSTANCE  2
 

@@ -51,24 +51,17 @@
 // Cached copy of the Hardware Gpio protocol instance
 TLMM_GPIO *gGpio = NULL;
 
-struct sd_parms sdcn;
+struct sd_parms sdcn = {0};
 static int high_capacity = 0;
 int scr_valid = 0;
-UINT32 scr[2];
-UINT16 rca;
-
-/* Function prototype */
-static void mmc_decode_csd(UINT32 * resp);
-static void mmc_decode_cid(UINT32 * resp);
+UINT32 scr[2] = {0};
+UINT16 rca = 0;
 
 /*
  *  Set SD MCLK speed (NOTE: Using pcom)
  */
 static int SD_MCLK_set(enum SD_MCLK_speed speed)
 {
-    //#ifdef USE_PROC_COMM
-	// SDCn_NS_REG clk enable bits are turned on automatically as part of
-	// setting clk speed. No need to enable sdcard clk explicitely
     pcom_set_sdcard_clk(sdcn.instance, speed);
 	return(1);
 }
@@ -120,19 +113,15 @@ static int SDCn_init(UINT32 instance)
 	// Set the appropriate bit in GLBL_CLK_ENA to start the HCLK
 	// Save the initial value of the bit for restoring later
 	sdcn.glbl_clk_ena_initial = (sdcn.glbl_clk_ena_mask & MmioRead32(GLBL_CLK_ENA));
-	//printf("BEFORE:: GLBL_CLK_ENA=0x%08x\n",MmioRead32(GLBL_CLK_ENA));
-	//printf("sdcn.glbl_clk_ena_initial = %d\n", sdcn.glbl_clk_ena_initial);
 	if (sdcn.glbl_clk_ena_initial == 0)
 		MmioWrite32(GLBL_CLK_ENA, MmioRead32(GLBL_CLK_ENA) | sdcn.glbl_clk_ena_mask);
-
-	//printf("AFTER_ENABLE:: GLBL_CLK_ENA=0x%08x\n",MmioRead32(GLBL_CLK_ENA));
 
 	// Set SD MCLK to 400KHz for card detection
 	SD_MCLK_set(400000);
 
     //#ifdef USE_DM
 	// Remember the initial value for restore
-	sdcn.adm_ch8_rslt_conf_initial = MmioRead32(ADM_REG_CH8_RSLT_CONF);
+	//sdcn.adm_ch8_rslt_conf_initial = MmioRead32(ADM_REG_CH8_RSLT_CONF);
     //#endif
 
 	// Configure GPIOs using proc_comm
@@ -160,9 +149,9 @@ static int SDCn_init(UINT32 instance)
 
 static int mmc_send_cmd(UINT16 cmd, UINT32 arg, UINT32 response[])
 {
-	UINT8 cmd_timeout = 0, cmd_crc_fail = 0, cmd_response_end = 0, n;
+	UINT8 cmd_timeout = 0, cmd_crc_fail = 0, cmd_response_end = 0, n = 0;
 	UINT8 cmd_index = cmd & MCI_CMD__CMD_INDEX___M;
-	UINT32 mci_status;
+	UINT32 mci_status = 0;
 
 	// Program command argument before programming command register
 	MmioWrite32(sdcn.base + MCI_ARGUMENT, arg);
@@ -235,10 +224,10 @@ static int mmc_send_cmd(UINT16 cmd, UINT32 arg, UINT32 response[])
 
 int card_identification_selection(UINT32 cid[], UINT16* rca, UINT8* num_of_io_func)
 {
-	UINT32 i;
-	UINT16 cmd;
+	UINT32 i = 0;
+	UINT16 cmd = 0;
 	UINT32 response[4] = {0};
-	UINT32 arg;
+	UINT32 arg = 0;
 	UINT32 hc_support = 0;
 
 	DEBUG((EFI_D_ERROR, "CMD0 - put the card in the idle state\n"));
@@ -324,8 +313,8 @@ int card_identification_selection(UINT32 cid[], UINT16* rca, UINT8* num_of_io_fu
 //static 
 int card_set_block_size(UINT32 size)
 {
-	UINT16 cmd;
-	UINT32 response[4];
+	UINT16 cmd = 0;
+	UINT32 response[4] = {0};
 
 	cmd = CMD16 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
 	if (!mmc_send_cmd(cmd, size, response))
@@ -336,9 +325,9 @@ int card_set_block_size(UINT32 size)
 
 static int read_SCR_register(UINT16 rca)
 {
-	UINT16 cmd;
+	UINT16 cmd = 0;
 	UINT32 response[4] = {0};
-	UINT32 mci_status;
+	UINT32 mci_status = 0;
 
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, RD_DATA_TIMEOUT);
 	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, 8);  // size of SCR
@@ -346,21 +335,24 @@ static int read_SCR_register(UINT16 rca)
 	// ZZZZ is the following step necessary?
 
 	// Set card block length to 8
-	if (!card_set_block_size(8))
+	if (!card_set_block_size(8)) {
 		return(0);
+	}
 
 	// Write data control register
 	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | (8 << MCI_DATA_CTL__BLOCKSIZE___S));
 
 	// CMD55   APP_CMD follows
 	cmd = CMD55 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
+	}
 
 	// ACMD51  SEND_SCR
 	cmd = ACMD51 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, 0, response))
+	if (!mmc_send_cmd(cmd, 0, response)) {
 		return(0);
+	}
 
 	do {
 		mci_status = MmioRead32(sdcn.base + MCI_STATUS);
@@ -377,56 +369,67 @@ static int read_SCR_register(UINT16 rca)
 
 static int card_transfer_init(UINT16 rca, UINT32 csd[], UINT32 cid[])
 {
-	UINT16 cmd, i;
+	UINT16 cmd = 0;
+	UINT16 i = 0;
 	UINT32 response[4] = {0};
 
 	// CMD9    SEND_CSD
 	cmd = CMD9 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M | MCI_CMD__LONGRSP___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
-	for (i=0; i<4; i++)
+	}
+	for (i=0; i<4; i++) {
 		csd[i] = response[i];
+	}
 
 	// CMD10   SEND_CID
 	cmd = CMD10 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M | MCI_CMD__LONGRSP___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
-	for (i=0; i<4; i++)
+	}
+	for (i=0; i<4; i++) {
 		cid[i] = response[i];
+	}
 
 	// CMD7    SELECT (RCA!=0)
 	cmd = CMD7 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
+	}
 
 	// Card is now in Transfer State
 
-	if (!read_SCR_register(rca))
+	if (!read_SCR_register(rca)) {
 		return(0);
+	}
 
     //4 bit mode
 	// CMD55   APP_CMD follows
 	cmd = CMD55 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
+	}
 
 	// ACMD6   SET_BUS_WIDTH
 	cmd = ACMD6 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, 2, response)) // 4 bit bus
+	if (!mmc_send_cmd(cmd, 2, response)) {
+		// 4 bit bus
 		return(0);
+	}
 
 	// CMD13   SEND_STATUS
 	cmd = CMD13 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
       return(0);
+	}
 
 	return(1);
 }
 
 static int check_clear_read_status(void)
 {
-	UINT32 mci_status;
-	UINT8  data_block_end;
+	UINT32 mci_status = 0;
+	UINT8  data_block_end = 0;
 
 	// Check status
 	do {
@@ -466,8 +469,8 @@ static int check_clear_read_status(void)
 
 static int check_clear_write_status(void)
 {
-	UINT32 mci_status;
-	UINT8  data_block_end;
+	UINT32 mci_status = 0;
+	UINT8  data_block_end = 0;
 
 	// Check status
 	do {
@@ -507,31 +510,34 @@ static int check_clear_write_status(void)
 
 static int read_SD_status(UINT16 rca)
 {
-	UINT16 cmd;
+	UINT16 cmd = 0;
 	UINT32 response[4] = {0};
-	UINT32 mci_status;
-	UINT32 data[16];
-	UINT32 i;
+	UINT32 mci_status = 0;
+	UINT32 data[16] = {0};
+	UINT32 i = 0;
 
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, RD_DATA_TIMEOUT);
 	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, 64);  // size of SD status
 
 	// Set card block length to 64
-	if (!card_set_block_size(64))
+	if (!card_set_block_size(64)) {
 		return(0);
+	}
 
 	// Write data control register
 	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | (64 << MCI_DATA_CTL__BLOCKSIZE___S));
 
 	// CMD55   APP_CMD follows
 	cmd = CMD55 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
+	}
 
 	// ACMD13  SD_STATUS
 	cmd = ACMD13 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, 0, response))
+	if (!mmc_send_cmd(cmd, 0, response)) {
 		return(0);
+	}
 
 	i = 0;
 	while(i < 16) {
@@ -562,29 +568,30 @@ static int read_SD_status(UINT16 rca)
 static int 
 switch_mode(UINT16 rca)
 {
-#define SWITCH_CHECK  (0 << 31)
-#define SWITCH_SET    (1 << 31)
-	UINT16 cmd;
+	UINT16 cmd = 0;
 	UINT32 response[4] = {0};
-	UINT32 arg;
-	UINT32 data[16];     // 512 bits
-	UINT32 i;
-	UINT32 mci_status;
+	UINT32 arg = 0;
+	UINT32 data[16] = {0};     // 512 bits
+	UINT32 i = 0;
+	UINT32 mci_status = 0;
 
 	// Only cards that comply with SD Physical Layer Spec Version 1.1 or greater support
 	// CMD6. Need to check the spec level in the SCR register before sending CMD6.
-	if (scr_valid != 1)
+	if (scr_valid != 1) {
 		return(0);
+	}
 
-	if (((scr[0] & 0x0F000000) >> 24) == 0)
+	if (((scr[0] & 0x0F000000) >> 24) == 0) {
 		return(0);
+	}
 
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, RD_DATA_TIMEOUT);
 	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, 64);  // size of switch data
 
 	// Set card block length to 64 bytes
-	if (!card_set_block_size(64))
+	if (!card_set_block_size(64)) {
 		return(0);
+	}
 
 	// Write data control register
 	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | (64 << MCI_DATA_CTL__BLOCKSIZE___S));
@@ -592,8 +599,9 @@ switch_mode(UINT16 rca)
 	// CMD6 Check Function
 	cmd = CMD6 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
 	arg = SWITCH_CHECK | 0x00FFFFF1;  // check if High-Speed is supported
-	if (!mmc_send_cmd(cmd, arg, response))
+	if (!mmc_send_cmd(cmd, arg, response)) {
 		return(0);
+	}
 
 	i = 0;
 	while(i < 16) {
@@ -609,9 +617,9 @@ switch_mode(UINT16 rca)
 		}
 	}
 
-	if (!check_clear_read_status())
+	if (!check_clear_read_status()) {
 		return(0);
-
+	}
 	// Byte swap the status.
 	for (i=0; i<16; i++) {
 		data[i] = Byte_swap32(data[i]);
@@ -620,14 +628,15 @@ switch_mode(UINT16 rca)
 	// Check to see if High-Speed mode is supported.
 	// Look at bit 1 of the Function Group 1 information field.
 	// This is bit 401 of the 512 byte switch status.
-	if ((data[3] & 0x00020000) == 0)
+	if ((data[3] & 0x00020000) == 0) {
 		return(0);
+	}
 
 	// Check to see if we can switch to function 1 in group 1.
 	// This is in bits 379:376 of the 512 byte switch status.
-	if ((data[4] & 0x0F000000) != 0x01000000)
+	if ((data[4] & 0x0F000000) != 0x01000000) {
 		return(0);
-
+	}
 	// At this point it is safe to change to high-speed mode.
 
 	// Write data control register
@@ -653,8 +662,9 @@ switch_mode(UINT16 rca)
 		}
 	}
 
-	if (!check_clear_read_status())
+	if (!check_clear_read_status()) {
 		return(0);
+	}
 
 	// Byte swap the status.
 	for (i=0; i<16; i++) {
@@ -663,9 +673,9 @@ switch_mode(UINT16 rca)
 
 	// Check to see if there was a successful switch to high speed mode.
 	// This is in bits 379:376 of the 512 byte switch status.
-	if ((data[4] & 0x0F000000) != 0x01000000)
+	if ((data[4] & 0x0F000000) != 0x01000000) {
 		return(0);
-
+	}
 	return(1);
 }
 
@@ -674,13 +684,12 @@ SdCardInit()
 {
     UINT32 cid[4] = {0};
     UINT32 csd[4] = {0};
-    UINT8  dummy;
-    UINT32 temp32;
+    UINT8  dummy = 0;
+    UINT32 temp32 = 0;
 
     // SD Init
     if (!SDCn_init(SDC_INSTANCE)) {
 		DEBUG((EFI_D_ERROR,"SD - error initializing (SDCn_init)\n"));
-		
 		return EFI_D_ERROR;
     }
 	DEBUG((EFI_D_ERROR,"Controller inited\n"));
@@ -688,7 +697,6 @@ SdCardInit()
     // Run card ID sequence
     if (!card_identification_selection(cid, &rca, &dummy)) {
 		DEBUG((EFI_D_ERROR,"SD - error initializing (card_identification_selection)\n"));
-       
 		return EFI_D_ERROR;
     }
 
@@ -740,14 +748,16 @@ SdCardInit()
 
 static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 {
-	UINT16 cmd, byte_count;
-	UINT32 mci_status, response[4];
-	UINT32 address;
+	UINT16 cmd = 0, byte_count = 0;
+	UINT32 mci_status = 0, response[4] = {0};
+	UINT32 address = 0;
 
-	if (high_capacity == 0)
+	if (high_capacity == 0) {
 		address = block_number * BLOCK_SIZE;
-	else
+	}
+	else {
 		address = block_number;
+	}
 
 	// Set timeout and data length
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, RD_DATA_TIMEOUT);
@@ -758,8 +768,9 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 
 	// Send READ_SINGLE_BLOCK command
 	cmd = CMD17 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, address, response))
+	if (!mmc_send_cmd(cmd, address, response)) {
 		return(0);
+	}
 
 	// Read the block
 	byte_count = 0;
@@ -776,31 +787,33 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 		}
 	}
 
-	if (!check_clear_read_status())
+	if (!check_clear_read_status()) {
 		return(0);
-
+	}
 	return(1);
 }
 
 static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 {
-	UINT16 cmd, byte_count;
-	UINT32 mci_status, response[4];
-	UINT32 address;
+	UINT16 cmd = 0, byte_count = 0;
+	UINT32 mci_status = 0, response[4] = {0};
+	UINT32 address = 0;
 
-	if (high_capacity == 0)
+	if (high_capacity == 0) {
 		address = block_number * BLOCK_SIZE;
-	else
+	}
+	else {
 		address = block_number;
-
+	}
 	// Set timeout and data length
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, WR_DATA_TIMEOUT);
 	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, BLOCK_SIZE);
 
 	// Send WRITE_BLOCK command
 	cmd = CMD24 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, address, response))
+	if (!mmc_send_cmd(cmd, address, response)) {
 		return(0);
+	}
 
 	// Write data control register
 	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S));
@@ -814,19 +827,20 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 			write_buffer++;
 			byte_count += 4;
 		}
-
-		if (mci_status &
-		   (MCI_STATUS__CMD_CRC_FAIL___M | MCI_STATUS__DATA_TIMEOUT___M | MCI_STATUS__TX_UNDERRUN___M))
+		if (mci_status & (MCI_STATUS__CMD_CRC_FAIL___M | MCI_STATUS__DATA_TIMEOUT___M | MCI_STATUS__TX_UNDERRUN___M)) {
 			return(0);
+		}
 	}
 
-	if (!check_clear_write_status())
+	if (!check_clear_write_status()) {
 		return(0);
+	}
 
 	// Send SEND_STATUS command (with PROG_ENA, can poll on PROG_DONE below)
 	cmd = CMD13 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M | MCI_CMD__PROG_ENA___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
+	if (!mmc_send_cmd(cmd, (rca << 16), response)) {
 		return(0);
+	}
 
 	// Wait for PROG_DONE
 	while(!(MmioRead32(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M));
@@ -841,7 +855,8 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 UINTN
 mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 {
-	UINT32 cur, blocks_todo = blkcnt;
+	UINT32 cur = 0;
+	UINT32 blocks_todo = blkcnt;
 
 	do {
 		cur = 1;
@@ -862,7 +877,8 @@ mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 UINTN
 mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 {
-	UINT32 cur, blocks_todo = blkcnt;
+	UINT32 cur = 0;
+	UINT32 blocks_todo = blkcnt;
 
 	do {
 		cur = 1;
@@ -923,9 +939,9 @@ MMCHS_DEVICE_PATH gMmcHsDevicePath = {
  */
 static void mmc_decode_csd(UINT32 * resp)
 {
-	unsigned int mult, csd_struct;
+	unsigned int mult = 0, csd_struct = 0;
     unsigned int high_capacity = 0;
-    unsigned long int SizeInMB;
+    unsigned long int SizeInMB = 0;
 
 	csd_struct = UNSTUFF_BITS(resp, 126, 2);
     switch (csd_struct) {
@@ -992,7 +1008,6 @@ MMCHSReset(
 	IN BOOLEAN                        ExtendedVerification
 )
 {
-	
 	return EFI_SUCCESS;
 }
 
@@ -1011,13 +1026,11 @@ STATIC UINT32 MmcReadInternal
 {
     UINT32 Ret = 0;
     UINT32 BlockSize = gMMCHSMedia.BlockSize;
-    UINT32 ReadSize;
+    UINT32 ReadSize = 0;
     UINT8 *Sptr = (UINT8 *) Buf;
 
     ASSERT(!(DataAddr % BlockSize));
     ASSERT(!(DataLen % BlockSize));
-
-    //WriteBackInvalidateDataCacheRange(Buf, DataLen);
 
     // Set size 
     ReadSize = BlockSize;
@@ -1044,7 +1057,6 @@ STATIC UINT32 MmcReadInternal
             return 1;
         }
     }
-
     return 1;
 }
 
@@ -1083,7 +1095,7 @@ MMCHSReadBlocks(
 )
 {
 	EFI_STATUS Status = EFI_SUCCESS;
-	UINTN      ret;
+	UINTN      ret = 0;
 
 	if (BufferSize % gMMCHSMedia.BlockSize != 0) 
     {
@@ -1137,13 +1149,11 @@ STATIC UINT32 MmcWriteInternal
 {
     UINT32 Ret = 0;
     UINT32 BlockSize = gMMCHSMedia.BlockSize;
-    UINT32 ReadSize;
+    UINT32 ReadSize = 0;
     UINT8 *Sptr = (UINT8 *) Buf;
 
     ASSERT(!(DataAddr % BlockSize));
     ASSERT(!(DataLen % BlockSize));
-
-    //WriteBackInvalidateDataCacheRange(Buf, DataLen);
 
     // Set size 
     ReadSize = BlockSize;
@@ -1170,7 +1180,6 @@ STATIC UINT32 MmcWriteInternal
             return 1;
         }
     }
-
     return 1;
 }
 
@@ -1205,7 +1214,7 @@ MMCHSWriteBlocks(
 )
 {
 	EFI_STATUS Status = EFI_SUCCESS;
-	UINTN      ret;
+	UINTN      ret = 0;
 
 	if (BufferSize % gMMCHSMedia.BlockSize != 0) 
     {
@@ -1280,7 +1289,7 @@ SdCardInitialize(
 	IN EFI_SYSTEM_TABLE   *SystemTable
 )
 {
-	EFI_STATUS  Status;
+	EFI_STATUS  Status = EFI_SUCCESS;
 
     // Find the gpio controller protocol.  ASSERT if not found.
     Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
@@ -1329,6 +1338,5 @@ SdCardInitialize(
         DEBUG((EFI_D_ERROR, "SD Card NOT inserted!\n"));
         return EFI_DEVICE_ERROR;
     }
-
 	return Status;
 }
