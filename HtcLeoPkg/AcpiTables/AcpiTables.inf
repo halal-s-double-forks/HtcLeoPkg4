@@ -32,7 +32,7 @@
   Gtdt.aslc
 
 [BuildOptions.ARM]
-  GCC:*_*_*_CC_FLAGS = -Wno-missing-braces
+  GCC:*_*_*_CC_FLAGS = 
 
 [Packages]
   ArmPkg/ArmPkg.dec
