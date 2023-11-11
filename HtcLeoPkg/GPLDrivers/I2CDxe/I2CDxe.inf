@@ -21,7 +21,7 @@
   ENTRY_POINT                    = I2CDxeInitialize
 
 [BuildOptions.ARM]
-  GCC:*_*_*_CC_FLAGS =  -Wno-shift-count-overflow -Wno-implicit-function-declaration 
+  GCC:*_*_*_CC_FLAGS =  -Wno-shift-count-overflow 
 
 [Sources.common]
   I2CDxe.c

@@ -34,7 +34,7 @@
   ENTRY_POINT                    = SdCardInitialize
 
 [BuildOptions.ARM]
-  GCC:*_*_*_CC_FLAGS = -Wno-uninitialized -Wno-shift-count-overflow -Wno-implicit-function-declaration  -Wlto-type-mismatch
+  GCC:*_*_*_CC_FLAGS = -Wno-uninitialized -Wno-shift-count-overflow  -Wlto-type-mismatch
 [Sources.common]
   SdCardDxe.c
 

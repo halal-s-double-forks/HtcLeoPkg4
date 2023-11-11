@@ -9,7 +9,7 @@
   ENTRY_POINT                    = TimerInitialize
   
 [BuildOptions.ARM]
-  GCC:*_*_*_CC_FLAGS =  -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-return-type
+  GCC:*_*_*_CC_FLAGS =  -Wno-shift-count-overflow -Wno-return-type
 
 [Sources.common]
   Timer.c
