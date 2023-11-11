@@ -26,7 +26,7 @@
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = HtcLeoPkg/HtcLeoPkg.fdf
 
-  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = 0
+  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = 1
   DEFINE USE_MEMORY_FOR_SERIAL_OUTPUT = 0
 
 !include HtcLeoPkg/CommonDsc.dsc.inc
@@ -156,7 +156,7 @@
   #
   gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable|TRUE
 
-  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x2a00000
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x20000000
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth|480
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight|800
 
