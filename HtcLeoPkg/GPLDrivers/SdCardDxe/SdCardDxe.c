@@ -674,7 +674,6 @@ SdCardInit()
     UINT32 cid[4] = {0};
     UINT32 csd[4] = {0};
     UINT8  dummy;
-    UINT32 buffer[128];
     UINT32 temp32;
 
     // SD Init
@@ -841,7 +840,6 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 UINTN
 mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 {
-	int err;
 	UINT32 cur, blocks_todo = blkcnt;
 
 	do {
@@ -863,7 +861,6 @@ mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
 UINTN
 mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 {
-	int err;
 	UINT32 cur, blocks_todo = blkcnt;
 
 	do {
@@ -1283,7 +1280,6 @@ SdCardInitialize(
 )
 {
 	EFI_STATUS  Status;
-    UINTN       IsSdPresent = 0;
 
     // Find the gpio controller protocol.  ASSERT if not found.
     Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
