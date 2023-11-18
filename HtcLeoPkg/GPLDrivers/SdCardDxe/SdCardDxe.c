@@ -103,6 +103,63 @@ MMCHS_DEVICE_PATH gMmcHsDevicePath = {
   }
 };
 
+// HACK
+int adm_start_transfer(uint32_t adm_chn, uint32_t *cmd_ptr_list)
+{
+    uint32_t timeout = 1;
+    uint32_t adm_status;
+    uint32_t adm_results;
+    uint32_t adm_addr_shift;
+    uint32_t delay_count = 100;
+
+	DEBUG((EFI_D_ERROR, "ADM"));
+
+    // Memory barrier to insure that all ADM command list structure writes have
+    // completed before starting the ADM transfer.
+    dmb();
+
+    // Start the ADM transfer
+	DEBUG((EFI_D_ERROR, "Start the ADM transfer"));
+    adm_addr_shift = (uint32_t)cmd_ptr_list >> 3;
+    writel(adm_addr_shift, ADM_REG_CMD_PTR(adm_chn, ADM_SD));
+
+    // Wait until the transfer has finished
+	DEBUG((EFI_D_ERROR, "Wait until the transfer has finished"));
+	do
+    {
+		adm_status = readl(ADM_REG_STATUS(adm_chn, ADM_SD));
+		if ((adm_status & ADM_REG_STATUS__RSLT_VLD___M) != 0)
+		{
+			timeout = 0;
+			break;
+		}
+		/* 10ms wait */
+		MicroSecondDelay(10);
+    }while(delay_count--);
+	
+	/* Read out the IRQ register to clear the interrupt.
+	 * Even though we are not using interrupts,
+	 * kernel is not clearing the interupts during its
+	 * ADM initialization, causing it to crash.
+	 */
+	adm_status = readl(ADM_REG_IRQ(ADM_SD));
+
+    // Get the result from the RSLT FIFO
+    if (timeout == 0)
+    {
+		adm_results = readl(ADM_REG_RSLT(adm_chn, ADM_SD));
+		if (((adm_results & ADM_REG_RSLT__ERR___M) != 0) ||
+		    ((adm_results & ADM_REG_RSLT__TPD___M) == 0) ||
+		    ((adm_results & ADM_REG_RSLT__V___M) == 0)) {
+			return (-1);
+		}
+    }
+
+	DEBUG((EFI_D_ERROR, "ADM: Finish"));
+
+    return(0);
+}
+
 /*
  *  Set SD MCLK speed
  */
@@ -1026,18 +1083,25 @@ static int read_a_block_dm(uint32_t block_number, uint32_t num_blocks, uint32_t 
 	sd_adm_cmd_ptr_list[0] = (ADM_CMD_PTR_LP | ADM_CMD_PTR_CMD_LIST | addr_shft);
 
 	// Start ADM transfer
+	DEBUG((EFI_D_ERROR, ""));
 	if (adm_start_transfer(ADM_AARM_SD_CHN, sd_adm_cmd_ptr_list) != 0)
 		return(0);
 
 	if (num_blocks > 1)	{
 		// Send STOP_TRANSMISSION
+		DEBUG((EFI_D_ERROR, "Send STOP_TRANSMISSION\n"));
 		cmd = CMD12 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-		if (!mmc_send_cmd(cmd, address, response))
+		if (!mmc_send_cmd(cmd, address, response)) {
+			DEBUG((EFI_D_ERROR, "Send STOP_TRANSMISSION FAILED\n"));
 			return(0);
+		}
 	}
-
-	if (!check_clear_read_status())
+	DEBUG((EFI_D_ERROR, "check_clear_read_status\n"));
+	if (!check_clear_read_status()) {
+		DEBUG((EFI_D_ERROR, "check_clear_read_status failed...\n"));
 		return(0);
+	}
+	DEBUG((EFI_D_ERROR, "check_clear_read_status success!\n"));
 
 	return(1);
 }
@@ -1194,10 +1258,12 @@ mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
             }
         } else {
             // Multiple block read using data mover
+			DEBUG((EFI_D_ERROR, "Multiple block read using data mover!\n"));
             if(!read_a_block_dm(blknr, i, dst)) {
                DEBUG((EFI_D_ERROR, "SD - read_a_block_dm error, blknr= 0x%08lx\n", blknr));
                return run_blkcnt;
             }
+			DEBUG((EFI_D_ERROR, "Multiple block read using data mover finished\n"));
         }
 
         run_blkcnt += i;
@@ -1313,6 +1379,7 @@ MMCHSReset(
 	return EFI_SUCCESS;
 }
 
+#ifndef USE_DM
 /*
  * Function: MmcReadInternal
  * Arg     : Data address on card, o/p buffer & data length
@@ -1361,7 +1428,7 @@ STATIC UINT32 MmcReadInternal
     }
     return 1;
 }
-
+#endif
 
 /**
 
@@ -1419,8 +1486,11 @@ MMCHSReadBlocks(
     	MicroSecondDelay(5000);
         return EFI_SUCCESS;
     }
-
+#ifdef USE_DM
+	ret = mmc_bread(Lba, (BufferSize / gMMCHSMedia.BlockSize), (VOID *)Buffer);
+#else
 	ret = MmcReadInternal((UINT64) Lba * 512, Buffer, BufferSize);
+#endif
 	
 	if (ret == 1)
     {
@@ -1624,7 +1694,7 @@ SdCardInitialize(
         if (!FoundMbr)
         {
             DEBUG((EFI_D_ERROR, "(Protective) MBR not found \n"));
-            CpuDeadLoop();
+            return EFI_DEVICE_ERROR;
         }
 
 		//Publish BlockIO.
@@ -1638,7 +1708,7 @@ SdCardInitialize(
     else {
         // TODO: Defer installing protocol until card is found
         DEBUG((EFI_D_ERROR, "SD Card NOT inserted!\n"));
-        return EFI_DEVICE_ERROR;
+        Status = EFI_DEVICE_ERROR;
     }
 	return Status;
 }

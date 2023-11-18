@@ -81,7 +81,7 @@ static void mmc_decode_cid(UINT32 * resp);
 #define CONFIG_GENERIC_MMC_MULTI_BLOCK_READ
 
 //#define USE_PROC_COMM
-//#define USE_DM
+#define USE_DM
 #define USE_HIGH_SPEED_MODE
 #define USE_4_BIT_BUS_MODE
 
