@@ -34,37 +34,210 @@
 #include <Library/TimerLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/LKEnvLib.h>
 
 #include <Protocol/BlockIo.h>
 #include <Protocol/DevicePath.h>
 
 #include <Library/gpio.h>
-#include <Library/Sdcard.h>
 #include <Chipset/iomap.h>
 #include <Library/reg.h>
 #include <Chipset/gpio.h>
 
+#include "SdCardDxe.h"
+
 #include <Library/adm.h>
+#ifdef USE_PROC_COMM
 #include <Library/pcom_clients.h>
+#endif /*USE_PROC_COMM */
+
 #include <Protocol/GpioTlmm.h>
 
 // Cached copy of the Hardware Gpio protocol instance
 TLMM_GPIO *gGpio = NULL;
 
 struct sd_parms sdcn = {0};
-static int high_capacity = 0;
-int scr_valid = 0;
 UINT32 scr[2] = {0};
+int scr_valid = 0;
+//static uchar spec_ver;
+static int high_capacity = 0;
 UINT16 rca = 0;
 
+// Structures for use with ADM
+uint32_t sd_adm_cmd_ptr_list[8] __attribute__ ((aligned(8))); // Must aligned on 8 byte boundary
+uint32_t sd_box_mode_entry[8]   __attribute__ ((aligned(8))); // Must aligned on 8 byte boundary
+
+EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
+{
+	SIGNATURE_32('s', 'd', 'c', 'c'),         // MediaId
+	TRUE,                                    // RemovableMedia
+	TRUE,                                     // MediaPresent
+	FALSE,                                    // LogicalPartition
+	FALSE,                                    // ReadOnly
+	FALSE,                                    // WriteCaching
+	512,                                      // BlockSize
+	4,                                        // IoAlign
+	0,                                        // Pad
+	0                                         // LastBlock
+};
+
+typedef struct
+{
+	VENDOR_DEVICE_PATH  Mmc;
+	EFI_DEVICE_PATH     End;
+} MMCHS_DEVICE_PATH;
+
+MMCHS_DEVICE_PATH gMmcHsDevicePath = {
+  {
+    {
+      HARDWARE_DEVICE_PATH,
+      HW_VENDOR_DP,
+      { (UINT8)(sizeof(VENDOR_DEVICE_PATH)), (UINT8)((sizeof(VENDOR_DEVICE_PATH)) >> 8) },
+    },
+    { 0xb615f1f5, 0x5088, 0x43cd, { 0x80, 0x9c, 0xa1, 0x6e, 0x52, 0x48, 0x7d, 0x00 } }
+  },
+  {
+    END_DEVICE_PATH_TYPE,
+    END_ENTIRE_DEVICE_PATH_SUBTYPE,
+    { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0 }
+  }
+};
+
 /*
- *  Set SD MCLK speed (NOTE: Using pcom)
+ *  Set SD MCLK speed
  */
 static int SD_MCLK_set(enum SD_MCLK_speed speed)
 {
+#ifndef USE_PROC_COMM
+	uint32_t md;
+	uint32_t ns;
+	static int init_value_saved = 0;
+
+	if (init_value_saved == 0) {
+		// Save initial value of MD and NS regs for restoring in deinit
+		sdcn.md_initial = readl(sdcn.md_addr);
+		sdcn.ns_initial = readl(sdcn.ns_addr);
+		init_value_saved = 1;
+   }
+#endif
+
+	DEBUG((EFI_D_INFO, "BEFORE::SDC[%d]_NS_REG=0x%08x\n", sdcn.instance, readl(sdcn.ns_addr)));
+	DEBUG((EFI_D_INFO, "BEFORE::SDC[%d]_MD_REG=0x%08x\n", sdcn.instance, readl(sdcn.md_addr)));
+
+#ifdef USE_PROC_COMM
+	//SDCn_NS_REG clk enable bits are turned on automatically as part of
+	//setting clk speed. No need to enable sdcard clk explicitely
     pcom_set_sdcard_clk(sdcn.instance, speed);
+    DEBUG((EFI_D_INFO, "clkrate_hz=%lu\n",pcom_get_sdcard_clk(sdcn.instance)));
+#else /*USE_PROC_COMM not defined */
+	switch (speed)
+	{
+		case MCLK_400KHz :
+			md = MCLK_MD_400KHZ;
+			ns = MCLK_NS_400KHZ;
+			break;
+		case MCLK_25MHz :
+			md = MCLK_MD_25MHZ;
+			ns = MCLK_NS_25MHZ;
+			break;
+		case MCLK_48MHz :
+			md = MCLK_MD_48MHZ;
+			ns = MCLK_NS_48MHZ;
+			break;
+		case MCLK_50MHz :
+			md = MCLK_MD_50MHZ;
+			ns = MCLK_NS_50MHZ;
+			break;
+		default:
+			printf("Unsupported Speed\n");
+			return 0;
+	}
+
+	// Write to MCLK registers
+	writel(md, sdcn.md_addr);
+	writel(ns, sdcn.ns_addr);
+#endif /*USE_PROC_COMM*/
+
+	DEBUG((EFI_D_INFO, "AFTER::SDC[%d]_NS_REG=0x%08x\n", sdcn.instance, readl(sdcn.ns_addr)));
+	DEBUG((EFI_D_INFO, "AFTER::SDC[%d]_MD_REG=0x%08x\n", sdcn.instance, readl(sdcn.md_addr)));
+
 	return(1);
 }
+
+void sdcard_gpio_config(int instance)
+{
+#ifndef USE_PROC_COMM
+	uint32_t io_drive = 0x3;   // 8mA
+	switch(instance) {
+		case 1:
+			// Configure the general purpose I/O for SDC1
+			writel(55, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(56, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(54, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(53, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(52, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(51, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+			break;
+		case 2:
+			// Configure the general purpose I/O for SDC2
+			writel(62, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(63, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(64, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(65, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(66, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(67, GPIO1_PAGE);
+			writel((0x1 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+			break;
+		case 3:
+			// not working yet, this is an MMC socket on the SURF.
+			break;
+		case 4:
+			// Configure the general purpose I/O for SDC4
+			writel(142, GPIO1_PAGE);
+			writel((0x3 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(143, GPIO1_PAGE);
+			writel((0x3 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(144, GPIO1_PAGE);
+			writel((0x2 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(145, GPIO1_PAGE);
+			writel((0x2 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(146, GPIO1_PAGE);
+			writel((0x3 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+
+			writel(147, GPIO1_PAGE);
+			writel((0x3 << 2) | 0x3 | (io_drive << 6), GPIO1_CFG);
+			break;
+	}
+#else /*USE_PROC_COMM defined */
+	pcom_sdcard_gpio_config(instance);
+#endif /*USE_PROC_COMM*/
+}
+
 
 /*
  * Initialize the specified SD card controller.
@@ -110,24 +283,39 @@ static int SDCn_init(UINT32 instance)
 			return(0); // Error: incorrect instance number
    }
 
+#ifdef USE_PROC_COMM
+	//switch on sd card power. The voltage regulator used is board specific
+	pcom_sdcard_power(1);
+#endif
+
 	// Set the appropriate bit in GLBL_CLK_ENA to start the HCLK
 	// Save the initial value of the bit for restoring later
-	sdcn.glbl_clk_ena_initial = (sdcn.glbl_clk_ena_mask & MmioRead32(GLBL_CLK_ENA));
+#ifndef USE_PROC_COMM
+	sdcn.glbl_clk_ena_initial = (sdcn.glbl_clk_ena_mask & readl(GLBL_CLK_ENA));
+	DEBUG((EFI_D_INFO, "BEFORE:: GLBL_CLK_ENA=0x%08x\n",readl(GLBL_CLK_ENA)));
+	DEBUG((EFI_D_INFO, "sdcn.glbl_clk_ena_initial = %d\n", sdcn.glbl_clk_ena_initial));
 	if (sdcn.glbl_clk_ena_initial == 0)
-		MmioWrite32(GLBL_CLK_ENA, MmioRead32(GLBL_CLK_ENA) | sdcn.glbl_clk_ena_mask);
+		writel(readl(GLBL_CLK_ENA) | sdcn.glbl_clk_ena_mask, GLBL_CLK_ENA);
+
+	DEBUG((EFI_D_INFO, "AFTER_ENABLE:: GLBL_CLK_ENA=0x%08x\n",readl(GLBL_CLK_ENA)));
+#else /* USE_PROC_COMM defined */
+	sdcn.glbl_clk_ena_initial =  pcom_is_sdcard_pclk_enabled(sdcn.instance);
+	DEBUG((EFI_D_INFO, "sdcn.glbl_clk_ena_initial = %d\n", sdcn.glbl_clk_ena_initial));
+	pcom_enable_sdcard_pclk(sdcn.instance);
+	DEBUG((EFI_D_INFO, "AFTER_ENABLE:: sdc_clk_enable=%d\n",
+    pcom_is_sdcard_pclk_enabled(sdcn.instance)));
+#endif /*USE_PROC_COMM*/
 
 	// Set SD MCLK to 400KHz for card detection
-	SD_MCLK_set(400000);
+	SD_MCLK_set(MCLK_400KHz);
 
-    //#ifdef USE_DM
+#ifdef USE_DM
 	// Remember the initial value for restore
-	//sdcn.adm_ch8_rslt_conf_initial = MmioRead32(ADM_REG_CH8_RSLT_CONF);
-    //#endif
+	sdcn.adm_ch8_rslt_conf_initial = MmioRead32(ADM_REG_CH8_RSLT_CONF);
+#endif
 
-	// Configure GPIOs using proc_comm
-	//sdcard_gpio_config(sdcn.instance); (use if pcom doesn't work)
-    pcom_sdcard_gpio_config(instance);
-
+	// Configure GPIOs
+	sdcard_gpio_config(sdcn.instance);
 	// Clear all status bits
 	MmioWrite32(sdcn.base + MCI_CLEAR, 0x07FFFFFF);
 
@@ -793,6 +981,67 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 	return(1);
 }
 
+static int read_a_block_dm(uint32_t block_number, uint32_t num_blocks, uint32_t read_buffer[])
+{
+	uint16_t cmd;
+	uint32_t response[4];
+	uint32_t address;
+	uint32_t num_rows;
+	uint32_t addr_shft;
+
+	if (high_capacity == 0)
+		address = block_number * BLOCK_SIZE;
+	else
+		address = block_number;
+
+	// Set timeout and data length
+	writel(RD_DATA_TIMEOUT, sdcn.base + MCI_DATA_TIMER);
+	writel(BLOCK_SIZE * num_blocks, sdcn.base + MCI_DATA_LENGTH);
+
+	// Write data control register enabling DMA
+	writel(MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | MCI_DATA_CTL__DM_ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S),
+			sdcn.base + MCI_DATA_CTL);
+
+	// Send READ command, READ_MULT if more than one block requested.
+	if (num_blocks == 1)
+		cmd = CMD17 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+	else
+		cmd = CMD18 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+		
+	if (!mmc_send_cmd(cmd, address, response))
+		return(0);
+
+	// Initialize the DM Box mode command entry (single entry)
+	// CRCI number is inserted for the source
+	num_rows = ROWS_PER_BLOCK * num_blocks;
+	sd_box_mode_entry[0] = (ADM_CMD_LIST_LC | (sdcn.adm_crci_num << 3) | ADM_ADDR_MODE_BOX);
+	sd_box_mode_entry[1] = sdcn.base + MCI_FIFO;                 				// SRC addr
+	sd_box_mode_entry[2] = (uint32_t)read_buffer;                  				// DST addr
+	sd_box_mode_entry[3] = ((SDCC_FIFO_SIZE << 16) | (SDCC_FIFO_SIZE << 0));	// SRC/DST row len
+	sd_box_mode_entry[4] = ((num_rows << 16) | (num_rows << 0));             	// SRC/DST num rows
+	sd_box_mode_entry[5] = ((0 << 16) | (SDCC_FIFO_SIZE << 0));              	// SRC/DST offset
+
+	// Initialize the DM Command Pointer List (single entry)
+	addr_shft = ((uint32_t)(&sd_box_mode_entry[0])) >> 3;
+	sd_adm_cmd_ptr_list[0] = (ADM_CMD_PTR_LP | ADM_CMD_PTR_CMD_LIST | addr_shft);
+
+	// Start ADM transfer
+	if (adm_start_transfer(ADM_AARM_SD_CHN, sd_adm_cmd_ptr_list) != 0)
+		return(0);
+
+	if (num_blocks > 1)	{
+		// Send STOP_TRANSMISSION
+		cmd = CMD12 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+		if (!mmc_send_cmd(cmd, address, response))
+			return(0);
+	}
+
+	if (!check_clear_read_status())
+		return(0);
+
+	return(1);
+}
+
 static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 {
 	UINT16 cmd = 0, byte_count = 0;
@@ -851,27 +1100,118 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 
 	return(1);
 }
+/*
+#ifdef USE_DM
+static int write_a_block_dm(uint32_t block_number, uint32_t num_blocks,
+                            uint32_t write_buffer[], uint16_t rca)
+{
+	uint16_t cmd;
+	uint32_t response[4];
+	uint32_t address;
+	uint32_t addr_shft;
+
+	if (high_capacity == 0)
+		address = block_number * BLOCK_SIZE;
+	else
+		address = block_number;
+
+	if (num_blocks != 1)
+		return(0);    // ZZZZ need to add support for multiple block DM write
+
+	// Set timeout and data length
+	writel(WR_DATA_TIMEOUT, sdcn.base + MCI_DATA_TIMER);
+	writel(BLOCK_SIZE, sdcn.base + MCI_DATA_LENGTH);
+
+	// Send WRITE_BLOCK command
+	cmd = CMD24 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+	if (!mmc_send_cmd(cmd, address, response))
+		return(0);
+
+	// Write data control register
+	writel(MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DM_ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S),
+			sdcn.base + MCI_DATA_CTL);
+
+	// Initialize the DM Box mode command entry (single entry)
+	// CRCI number is inserted for the destination
+	sd_box_mode_entry[0] = (ADM_CMD_LIST_LC | (sdcn.adm_crci_num << 7) | ADM_ADDR_MODE_BOX);
+	sd_box_mode_entry[1] = (uint32_t)write_buffer;        					// SRC addr
+	sd_box_mode_entry[2] = sdcn.base + MCI_FIFO;          					// DST addr
+	sd_box_mode_entry[3] = ((SDCC_FIFO_SIZE << 16) | (SDCC_FIFO_SIZE << 0));// SRC/DST row len
+	sd_box_mode_entry[4] = ((ROWS_PER_BLOCK << 16) | (ROWS_PER_BLOCK << 0));// SRC/DST num rows
+	sd_box_mode_entry[5] = ((SDCC_FIFO_SIZE << 16) | (0 << 0));             // SRC/DST offset
+
+	// Initialize the DM Command Pointer List (single entry)
+	addr_shft = ((uint32_t)(&sd_box_mode_entry[0])) >> 3;
+	sd_adm_cmd_ptr_list[0] = (ADM_CMD_PTR_LP | ADM_CMD_PTR_CMD_LIST | addr_shft);
+
+	// Start ADM transfer
+	if (adm_start_transfer(ADM_AARM_SD_CHN, sd_adm_cmd_ptr_list) != 0)
+		return(0);
+
+	if (!check_clear_write_status())
+		return(0);
+
+	// Send SEND_STATUS command (with PROG_ENA, can poll on PROG_DONE below)
+	cmd = CMD13 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M | MCI_CMD__PROG_ENA___M;
+	if (!mmc_send_cmd(cmd, (rca << 16), response))
+		return(0);
+
+	// Wait for PROG_DONE
+	while(!(readl(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M));
+
+	// Clear PROG_DONE and wait until cleared
+	writel(MCI_CLEAR__PROG_DONE_CLR___M, sdcn.base + MCI_CLEAR);
+	while(readl(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M);
+
+	return(1);
+}
+#endif
+*/
 
 UINTN
-mmc_bread(UINT32 start, UINT32 blkcnt, void *dst)
+mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
 {
-	UINT32 cur = 0;
-	UINT32 blocks_todo = blkcnt;
+	int i;
+    unsigned long run_blkcnt = 0;
 
-	do {
-		cur = 1;
-		if (!read_a_block(start, dst))
-		{
-			DEBUG((EFI_D_ERROR, "%s: Failed to read blocks\n", __func__));
-			return 0;
+	if(blkcnt == 0) {
+		goto end;
+	}
+
+	/* Break up reads into multiples of NUM_BLOCKS_MULT */
+    while (blkcnt != 0) {
+        if (blkcnt >= NUM_BLOCKS_MULT) {
+           i = NUM_BLOCKS_MULT;
 		}
-		blocks_todo -= cur;
-		start += cur;
-		dst += cur * 512;
-	} 
-	while (blocks_todo > 0);
+        else
+           i = blkcnt;
 
-	return blkcnt;
+        if (i==1) {
+            // Single block read
+            if(!read_a_block(blknr, dst)) {
+               DEBUG((EFI_D_ERROR, "SD - read_a_block error, blknr= 0x%08lx\n", blknr));
+               return run_blkcnt;
+            }
+        } else {
+            // Multiple block read using data mover
+            if(!read_a_block_dm(blknr, i, dst)) {
+               DEBUG((EFI_D_ERROR, "SD - read_a_block_dm error, blknr= 0x%08lx\n", blknr));
+               return run_blkcnt;
+            }
+        }
+
+        run_blkcnt += i;
+        // Output status every NUM_BLOCKS_STATUS blocks
+        //if ((run_blkcnt % NUM_BLOCKS_STATUS) == 0)
+        //   printf(".");
+
+        blknr += i;
+        blkcnt -= i;
+        dst += (gMMCHSMedia.BlockSize * i);
+    }
+
+end:
+	return run_blkcnt;
 }
 
 UINTN
@@ -895,44 +1235,6 @@ mmc_bwrite(UINT32 start, UINT32 blkcnt, void *dst)
 
 	return blkcnt;
 }
-
-/* lk func end */
-
-EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
-{
-	SIGNATURE_32('s', 'd', 'c', 'c'),         // MediaId
-	TRUE,                                    // RemovableMedia
-	TRUE,                                     // MediaPresent
-	FALSE,                                    // LogicalPartition
-	FALSE,                                    // ReadOnly
-	FALSE,                                    // WriteCaching
-	512,                                      // BlockSize
-	4,                                        // IoAlign
-	0,                                        // Pad
-	0                                         // LastBlock
-};
-
-typedef struct
-{
-	VENDOR_DEVICE_PATH  Mmc;
-	EFI_DEVICE_PATH     End;
-} MMCHS_DEVICE_PATH;
-
-MMCHS_DEVICE_PATH gMmcHsDevicePath = {
-  {
-    {
-      HARDWARE_DEVICE_PATH,
-      HW_VENDOR_DP,
-      { (UINT8)(sizeof(VENDOR_DEVICE_PATH)), (UINT8)((sizeof(VENDOR_DEVICE_PATH)) >> 8) },
-    },
-    { 0xb615f1f5, 0x5088, 0x43cd, { 0x80, 0x9c, 0xa1, 0x6e, 0x52, 0x48, 0x7d, 0x00 } }
-  },
-  {
-    END_DEVICE_PATH_TYPE,
-    END_ENTIRE_DEVICE_PATH_SUBTYPE,
-    { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0 }
-  }
-};
 
 /*
  * Given a 128-bit response, decode to our card CSD structure.

@@ -80,10 +80,18 @@ static void mmc_decode_cid(UINT32 * resp);
 #define CONFIG_DOS_PARTITION
 #define CONFIG_GENERIC_MMC_MULTI_BLOCK_READ
 
-//#define USE_PROC_COMM
-#define USE_DM
+#define USE_PROC_COMM
+//#define USE_DM
 #define USE_HIGH_SPEED_MODE
 #define USE_4_BIT_BUS_MODE
+
+#ifdef USE_DM
+#define NUM_BLOCKS_MULT    256
+#else
+#define NUM_BLOCKS_MULT    1
+#endif
+
+#define NUM_BLOCKS_STATUS  1024
 
 #define BLOCK_SIZE      512
 #define SDCC_FIFO_SIZE  64
