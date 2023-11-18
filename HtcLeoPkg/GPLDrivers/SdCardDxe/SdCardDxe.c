@@ -149,7 +149,7 @@ static int SD_MCLK_set(enum SD_MCLK_speed speed)
 			ns = MCLK_NS_50MHZ;
 			break;
 		default:
-			printf("Unsupported Speed\n");
+			DEBUG((EFI_D_ERROR, "Unsupported Speed\n"));
 			return 0;
 	}
 
