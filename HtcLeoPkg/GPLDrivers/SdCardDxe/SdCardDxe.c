@@ -1081,6 +1081,7 @@ mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
 {
 	int i;
     unsigned long run_blkcnt = 0;
+	adm_result_t adm_result = ADM_RESULT_SUCCESS;
 
 	if(blkcnt == 0) {
 		goto end;
@@ -1102,20 +1103,24 @@ mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
             }
         } else {
             // Multiple block read using data mover
-			DEBUG((EFI_D_ERROR, "Multiple block read using data mover!\n"));
-            if(read_a_block_dm(blknr, i, dst) != ADM_RESULT_SUCCESS) {
-               DEBUG((EFI_D_ERROR, "SD - read_a_block adm error, blknr= 0x%08lx\n", blknr));
-			   CpuDeadLoop();//HACK: debugging
-               return run_blkcnt;
+			adm_result = read_a_block_dm(blknr, i, dst);
+            if(adm_result != ADM_RESULT_SUCCESS) {
+				if(adm_result == ADM_RESULT_TIMEOUT) {
+					DEBUG((EFI_D_ERROR, "mmc_bread: adm_read TIMEOUT, blknr= 0x%08lx\n", blknr));
+				}
+				else if(adm_result == ADM_RESULT_FAILURE) {
+					DEBUG((EFI_D_ERROR, "mmc_bread: adm_read FAILURE, blknr= 0x%08lx\n", blknr));
+				}
+				else {
+					DEBUG((EFI_D_ERROR, "mmc_bread: adm_read return val unrecognized, blknr= 0x%08lx\n", blknr));
+				}
+				CpuDeadLoop();//HACK: debugging
+            	return run_blkcnt;
             }
 			DEBUG((EFI_D_ERROR, "Multiple block read using data mover finished\n"));
         }
 
         run_blkcnt += i;
-        // Output status every NUM_BLOCKS_STATUS blocks
-        //if ((run_blkcnt % NUM_BLOCKS_STATUS) == 0)
-        //   printf(".");
-
         blknr += i;
         blkcnt -= i;
         dst += (gMMCHSMedia.BlockSize * i);
