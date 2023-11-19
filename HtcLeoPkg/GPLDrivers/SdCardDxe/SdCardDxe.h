@@ -94,7 +94,6 @@ static void mmc_decode_cid(UINT32 * resp);
 #define NUM_BLOCKS_STATUS  1024
 
 #define BLOCK_SIZE      512
-#define SDCC_FIFO_SIZE  64
 #define ROWS_PER_BLOCK  (BLOCK_SIZE / SDCC_FIFO_SIZE)
 
 #define BUS_WIDTH_1     0
@@ -118,9 +117,6 @@ static void mmc_decode_cid(UINT32 * resp);
 #define MMC_RSP_R5      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 #define MMC_RSP_R6      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 #define MMC_RSP_R7      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
-
-#define MMC_DATA_READ		1
-#define MMC_DATA_WRITE		2
 
 // HCLK_FREQ is only used to set timeout values.  This is not critical,
 // as higher HCLK_FREQ will simply create a larger timeout count.
@@ -262,13 +258,6 @@ enum SD_MCLK_speed
 // 2.3-2.4 and  2.7-3.6
 //#define SDCC_VOLTAGE_SUPPORTED 0x00FF8080;
 
-// ADM Command Pointer List Entry definitions
-#define ADM_CMD_PTR_LP          0x80000000    // Last pointer
-#define ADM_CMD_PTR_CMD_LIST    (0 << 29)     // Command List
-// ADM Command List definitions (First Word)
-#define ADM_CMD_LIST_LC         0x80000000    // Last command
-#define ADM_ADDR_MODE_BOX       (3 << 0)      // Box address mode
-
 #define	Byte_swap32(value)  ( ((value >>24) & 0x000000ff) \
                             | ((value >> 8) & 0x0000ff00) \
 			                | ((value << 8) & 0x00ff0000) \
@@ -291,9 +280,6 @@ enum SD_MCLK_speed
 #define IS_SD(x) 			(x->version & SD_VERSION_SD)
 
 #define SD_DATA_4BIT		0x00040000
-
-#define MMC_DATA_READ		1
-#define MMC_DATA_WRITE		2
 
 #define SDCC_ERR_GENERIC        	-1
 #define SDCC_ERR_CRC_FAIL       	-2

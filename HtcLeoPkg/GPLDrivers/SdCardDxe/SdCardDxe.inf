@@ -51,6 +51,7 @@
   BaseMemoryLib
   IoLib
   ArmLib
+  AdmLib
   BaseLib
   DebugLib
   UefiBootServicesTableLib

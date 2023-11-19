@@ -44,6 +44,8 @@
 #include <Library/reg.h>
 #include <Chipset/gpio.h>
 
+#include <Chipset/adm_clk.h>
+
 #include "SdCardDxe.h"
 
 #include <Library/adm.h>
@@ -102,60 +104,6 @@ MMCHS_DEVICE_PATH gMmcHsDevicePath = {
     { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0 }
   }
 };
-
-// HACK
-int adm_start_transfer(uint32_t adm_chn, uint32_t *cmd_ptr_list)
-{
-    uint32_t timeout = 1;
-    uint32_t adm_status;
-    uint32_t adm_results;
-    uint32_t adm_addr_shift;
-    uint32_t delay_count = 100;
-
-    // Memory barrier to insure that all ADM command list structure writes have
-    // completed before starting the ADM transfer.
-    dmb();
-
-    // Start the ADM transfer
-	DEBUG((EFI_D_ERROR, "Start the ADM transfer\n"));
-    adm_addr_shift = (uint32_t)cmd_ptr_list >> 3;
-    writel(adm_addr_shift, ADM_REG_CMD_PTR(adm_chn, ADM_SD));
-
-    // Wait until the transfer has finished
-	DEBUG((EFI_D_ERROR, "Wait until the transfer has finished\n"));
-	do
-    {
-		adm_status = readl(ADM_REG_STATUS(adm_chn, ADM_SD));
-		if ((adm_status & ADM_REG_STATUS__RSLT_VLD___M) != 0)
-		{
-			timeout = 0;
-			break;
-		}
-		/* 10ms wait */
-		MicroSecondDelay(10);
-    }while(delay_count--);
-	
-	/* Read out the IRQ register to clear the interrupt.
-	 * Even though we are not using interrupts,
-	 * kernel is not clearing the interupts during its
-	 * ADM initialization, causing it to crash.
-	 */
-	adm_status = readl(ADM_REG_IRQ(ADM_SD));
-
-    // Get the result from the RSLT FIFO
-    if (timeout == 0)
-    {
-		adm_results = readl(ADM_REG_RSLT(adm_chn, ADM_SD));
-		if (((adm_results & ADM_REG_RSLT__ERR___M) != 0) ||
-		    ((adm_results & ADM_REG_RSLT__TPD___M) == 0) ||
-		    ((adm_results & ADM_REG_RSLT__V___M) == 0)) {
-			return (-1);
-		}
-    }
-
-	DEBUG((EFI_D_ERROR, "ADM: Finish\n"));
-    return(0);
-}
 
 /*
  *  Set SD MCLK speed
@@ -1037,51 +985,36 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 
 static int read_a_block_dm(uint32_t block_number, uint32_t num_blocks, uint32_t read_buffer[])
 {
-	uint32_t num_rows;
-    uint32_t addr_shft;
-    uint32_t rows_per_block;
-    uint16_t row_len;
-	int adm_status = 0;
+	adm_result_t result = ADM_RESULT_SUCCESS;
+	uint16_t cmd;
+	uint32_t response[4];
+	uint32_t address;
 
-    row_len = SDCC_FIFO_SIZE;
-    rows_per_block = (gMMCHSMedia.BlockSize / SDCC_FIFO_SIZE);//(data->blocksize / SDCC_FIFO_SIZE);
-    num_rows = rows_per_block * num_blocks;//data->blocks;
+	if (high_capacity == 0)
+		address = block_number * BLOCK_SIZE;
+	else
+		address = block_number;
 
-    while( num_rows != 0 ) {
-        uint32_t tx_size = 0;
-        // Check to see if the attempted transfer size is more than 0xFFFF
-        // If it is we need to do more than one transfer.
-        if( num_rows > 0xFFFF ) {
-            tx_size   = 0xFFFF;
-            num_rows -= 0xFFFF;
-        } else {
-            tx_size  = num_rows;
-            num_rows = 0;
-        }
-			
-        // Initialize the DM Box mode command entry (single entry)
-        sd_box_mode_entry[0] = (ADM_CMD_LIST_LC | (sdcn.adm_crci_num << 3) | ADM_ADDR_MODE_BOX);
-        sd_box_mode_entry[1] = sdcn.base + MCI_FIFO;                // SRC addr
-        sd_box_mode_entry[2] = (uint32_t)read_buffer;               // DST addr
-        sd_box_mode_entry[3] = ((row_len << 16) | (row_len << 0));  // SRC/DST row len
-        sd_box_mode_entry[4] = ((tx_size << 16) | (tx_size << 0)); 	// SRC/DST num rows
-        sd_box_mode_entry[5] = ((0 << 16) | (SDCC_FIFO_SIZE << 0)); // SRC/DST offset
-        
-		// Initialize the DM Command Pointer List (single entry)
-        addr_shft = ((uint32_t)(&sd_box_mode_entry[0])) >> 3;
-        sd_adm_cmd_ptr_list[0] = (ADM_CMD_PTR_LP | ADM_CMD_PTR_CMD_LIST | addr_shft);
+	// Set timeout and data length
+	writel(RD_DATA_TIMEOUT, sdcn.base + MCI_DATA_TIMER);
+	writel(BLOCK_SIZE * num_blocks, sdcn.base + MCI_DATA_LENGTH);
 
-        // Start ADM transfer, this transfer waits until it finishes
-        // before returing
-		adm_status = adm_start_transfer(ADM_AARM_SD_CHN, sd_adm_cmd_ptr_list);
-        if ( adm_status != 0) {
-			DEBUG((EFI_D_ERROR, "Adm transfer failed with %n\n", adm_status));
-        	return SDCC_ERR_DATA_ADM_ERR;
-        }
-        // Add the amount we have transfered to the destination
-        read_buffer += (tx_size*row_len);
-    }
-	return 0;
+	// Write data control register enabling DMA
+	writel(MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | MCI_DATA_CTL__DM_ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S),
+			sdcn.base + MCI_DATA_CTL);
+
+	// Send READ command, READ_MULT if more than one block requested.
+	if (num_blocks == 1)
+		cmd = CMD17 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+	else
+		cmd = CMD18 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+		
+	if (!mmc_send_cmd(cmd, address, response))
+		return(-1);
+
+	result = adm_transfer_mmc_data(2, (unsigned char *)read_buffer, num_blocks, ADM_MMC_READ);
+    
+	return result;
 }
 
 static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
@@ -1142,73 +1075,6 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 
 	return(1);
 }
-/*
-#ifdef USE_DM
-static int write_a_block_dm(uint32_t block_number, uint32_t num_blocks,
-                            uint32_t write_buffer[], uint16_t rca)
-{
-	uint16_t cmd;
-	uint32_t response[4];
-	uint32_t address;
-	uint32_t addr_shft;
-
-	if (high_capacity == 0)
-		address = block_number * BLOCK_SIZE;
-	else
-		address = block_number;
-
-	if (num_blocks != 1)
-		return(0);    // ZZZZ need to add support for multiple block DM write
-
-	// Set timeout and data length
-	writel(WR_DATA_TIMEOUT, sdcn.base + MCI_DATA_TIMER);
-	writel(BLOCK_SIZE, sdcn.base + MCI_DATA_LENGTH);
-
-	// Send WRITE_BLOCK command
-	cmd = CMD24 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	if (!mmc_send_cmd(cmd, address, response))
-		return(0);
-
-	// Write data control register
-	writel(MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DM_ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S),
-			sdcn.base + MCI_DATA_CTL);
-
-	// Initialize the DM Box mode command entry (single entry)
-	// CRCI number is inserted for the destination
-	sd_box_mode_entry[0] = (ADM_CMD_LIST_LC | (sdcn.adm_crci_num << 7) | ADM_ADDR_MODE_BOX);
-	sd_box_mode_entry[1] = (uint32_t)write_buffer;        					// SRC addr
-	sd_box_mode_entry[2] = sdcn.base + MCI_FIFO;          					// DST addr
-	sd_box_mode_entry[3] = ((SDCC_FIFO_SIZE << 16) | (SDCC_FIFO_SIZE << 0));// SRC/DST row len
-	sd_box_mode_entry[4] = ((ROWS_PER_BLOCK << 16) | (ROWS_PER_BLOCK << 0));// SRC/DST num rows
-	sd_box_mode_entry[5] = ((SDCC_FIFO_SIZE << 16) | (0 << 0));             // SRC/DST offset
-
-	// Initialize the DM Command Pointer List (single entry)
-	addr_shft = ((uint32_t)(&sd_box_mode_entry[0])) >> 3;
-	sd_adm_cmd_ptr_list[0] = (ADM_CMD_PTR_LP | ADM_CMD_PTR_CMD_LIST | addr_shft);
-
-	// Start ADM transfer
-	if (adm_start_transfer(ADM_AARM_SD_CHN, sd_adm_cmd_ptr_list) != 0)
-		return(0);
-
-	if (!check_clear_write_status())
-		return(0);
-
-	// Send SEND_STATUS command (with PROG_ENA, can poll on PROG_DONE below)
-	cmd = CMD13 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M | MCI_CMD__PROG_ENA___M;
-	if (!mmc_send_cmd(cmd, (rca << 16), response))
-		return(0);
-
-	// Wait for PROG_DONE
-	while(!(readl(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M));
-
-	// Clear PROG_DONE and wait until cleared
-	writel(MCI_CLEAR__PROG_DONE_CLR___M, sdcn.base + MCI_CLEAR);
-	while(readl(sdcn.base + MCI_STATUS) & MCI_STATUS__PROG_DONE___M);
-
-	return(1);
-}
-#endif
-*/
 
 UINTN
 mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
@@ -1237,8 +1103,9 @@ mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
         } else {
             // Multiple block read using data mover
 			DEBUG((EFI_D_ERROR, "Multiple block read using data mover!\n"));
-            if(read_a_block_dm(blknr, i, dst)) {
+            if(read_a_block_dm(blknr, i, dst) != ADM_RESULT_SUCCESS) {
                DEBUG((EFI_D_ERROR, "SD - read_a_block adm error, blknr= 0x%08lx\n", blknr));
+			   CpuDeadLoop();//HACK: debugging
                return run_blkcnt;
             }
 			DEBUG((EFI_D_ERROR, "Multiple block read using data mover finished\n"));
@@ -1657,17 +1524,14 @@ SdCardInitialize(
 
 		for (UINTN i = 0; i <= MIN(gMMCHSMedia.LastBlock, 50); i++)
 		{
-            int blk = mmc_bread(i, 1, &BlkDump);
-            if (blk)
+            mmc_bread(i, 2, &BlkDump); //test multi read
+			if (BlkDump[510] == 0x55 && BlkDump[511] == 0xAA)
             {
-                if (BlkDump[510] == 0x55 && BlkDump[511] == 0xAA)
-                {
-                    DEBUG((EFI_D_INFO, "MBR found at %d \n", i));
-                    FoundMbr = TRUE;
-                    break;
-                }
-                DEBUG((EFI_D_INFO, "MBR not found at %d \n", i));
+                DEBUG((EFI_D_INFO, "MBR found at %d \n", i));
+                FoundMbr = TRUE;
+                break;
             }
+            DEBUG((EFI_D_INFO, "MBR not found at %d \n", i));
 		}    
         if (!FoundMbr)
         {
