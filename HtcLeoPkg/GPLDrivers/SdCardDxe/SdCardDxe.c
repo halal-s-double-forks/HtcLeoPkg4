@@ -925,7 +925,7 @@ SdCardInit()
        NanoSecondDelay(1000);
     }
 
-    if (!card_set_block_size(BLOCK_SIZE)) {
+    if (!card_set_block_size(gMMCHSMedia.BlockSize)) {
 		DEBUG((EFI_D_ERROR, "SD - Error setting block size\n\r"));
 		return EFI_D_ERROR;
     }
@@ -943,7 +943,7 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 	UINT32 address = 0;
 
 	if (high_capacity == 0) {
-		address = block_number * BLOCK_SIZE;
+		address = block_number * gMMCHSMedia.BlockSize;
 	}
 	else {
 		address = block_number;
@@ -951,10 +951,10 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 
 	// Set timeout and data length
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, RD_DATA_TIMEOUT);
-	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, BLOCK_SIZE);
+	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, gMMCHSMedia.BlockSize);
 
 	// Write data control register
-	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S));
+	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | (gMMCHSMedia.BlockSize << MCI_DATA_CTL__BLOCKSIZE___S));
 
 	// Send READ_SINGLE_BLOCK command
 	cmd = CMD17 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
@@ -964,7 +964,7 @@ static int read_a_block(UINT32 block_number, UINT32 read_buffer[])
 
 	// Read the block
 	byte_count = 0;
-	while (byte_count < BLOCK_SIZE)	{
+	while (byte_count < gMMCHSMedia.BlockSize)	{
 		mci_status = MmioRead32(sdcn.base + MCI_STATUS);
 		if ((mci_status & MCI_STATUS__RXDATA_AVLBL___M) != 0) {
 			*read_buffer = MmioRead32(sdcn.base + MCI_FIFO);
@@ -989,31 +989,56 @@ static int read_a_block_dm(uint32_t block_number, uint32_t num_blocks, uint32_t 
 	uint16_t cmd;
 	uint32_t response[4];
 	uint32_t address;
+	uint32_t read_timeout = RD_DATA_TIMEOUT * 2;//HACK (more of a test really)
 
 	if (high_capacity == 0)
-		address = block_number * BLOCK_SIZE;
+		address = block_number * gMMCHSMedia.BlockSize;
 	else
 		address = block_number;
 
 	// Set timeout and data length
-	writel(RD_DATA_TIMEOUT, sdcn.base + MCI_DATA_TIMER);
-	writel(BLOCK_SIZE * num_blocks, sdcn.base + MCI_DATA_LENGTH);
+	writel(read_timeout, sdcn.base + MCI_DATA_TIMER);
+	writel(gMMCHSMedia.BlockSize * num_blocks, sdcn.base + MCI_DATA_LENGTH);
 
 	// Write data control register enabling DMA
-	writel(MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | MCI_DATA_CTL__DM_ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S),
+	writel(MCI_DATA_CTL__ENABLE___M | MCI_DATA_CTL__DIRECTION___M | MCI_DATA_CTL__DM_ENABLE___M | (gMMCHSMedia.BlockSize << MCI_DATA_CTL__BLOCKSIZE___S),
 			sdcn.base + MCI_DATA_CTL);
 
 	// Send READ command, READ_MULT if more than one block requested.
-	if (num_blocks == 1)
+	if (num_blocks == 1) {
 		cmd = CMD17 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-	else
+	}
+	else {
 		cmd = CMD18 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
-		
-	if (!mmc_send_cmd(cmd, address, response))
+	}
+	if (!mmc_send_cmd(cmd, address, response)) {
 		return(-1);
+	}
 
-	result = adm_transfer_mmc_data(2, (unsigned char *)read_buffer, num_blocks, ADM_MMC_READ);
-    
+	result = adm_transfer_mmc_data(sdcn.instance, (unsigned char *)read_buffer, num_blocks, ADM_MMC_READ);
+	if(result != ADM_RESULT_SUCCESS) {
+		if(result == ADM_RESULT_TIMEOUT) {
+			DEBUG((EFI_D_ERROR, "adm_read TIMEOUT\n"));
+		}
+		else if(result == ADM_RESULT_FAILURE) {
+			DEBUG((EFI_D_ERROR, "adm_read FAILURE\n"));
+		}
+		else {
+			DEBUG((EFI_D_ERROR, "adm_read return val unrecognized!\n"));
+		}
+	}
+
+	if (num_blocks > 1)	{
+		/* Send STOP_TRANSMISSION */
+		cmd = CMD12 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
+		if (!mmc_send_cmd(cmd, address, response)) {
+			return(-1);
+		}
+	}
+
+	//if (!check_clear_read_status())
+	//	return(-1);
+
 	return result;
 }
 
@@ -1024,14 +1049,14 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 	UINT32 address = 0;
 
 	if (high_capacity == 0) {
-		address = block_number * BLOCK_SIZE;
+		address = block_number * gMMCHSMedia.BlockSize;
 	}
 	else {
 		address = block_number;
 	}
 	// Set timeout and data length
 	MmioWrite32(sdcn.base + MCI_DATA_TIMER, WR_DATA_TIMEOUT);
-	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, BLOCK_SIZE);
+	MmioWrite32(sdcn.base + MCI_DATA_LENGTH, gMMCHSMedia.BlockSize);
 
 	// Send WRITE_BLOCK command
 	cmd = CMD24 | MCI_CMD__ENABLE___M | MCI_CMD__RESPONSE___M;
@@ -1040,11 +1065,11 @@ static int write_a_block(UINT32 block_number, UINT32 write_buffer[], UINT16 rca)
 	}
 
 	// Write data control register
-	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | (BLOCK_SIZE << MCI_DATA_CTL__BLOCKSIZE___S));
+	MmioWrite32(sdcn.base + MCI_DATA_CTL, MCI_DATA_CTL__ENABLE___M | (gMMCHSMedia.BlockSize << MCI_DATA_CTL__BLOCKSIZE___S));
 
 	// Write the block
 	byte_count = 0;
-	while (byte_count < BLOCK_SIZE)	{
+	while (byte_count < gMMCHSMedia.BlockSize)	{
 		mci_status = MmioRead32(sdcn.base + MCI_STATUS);
 		if ((mci_status & MCI_STATUS__TXFIFO_FULL___M) == 0) {
 			MmioWrite32(sdcn.base + MCI_FIFO, *write_buffer);
@@ -1081,7 +1106,6 @@ mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
 {
 	int i;
     unsigned long run_blkcnt = 0;
-	adm_result_t adm_result = ADM_RESULT_SUCCESS;
 
 	if(blkcnt == 0) {
 		goto end;
@@ -1103,20 +1127,11 @@ mmc_bread(UINT32 blknr, UINT32 blkcnt, void *dst)
             }
         } else {
             // Multiple block read using data mover
-			adm_result = read_a_block_dm(blknr, i, dst);
-            if(adm_result != ADM_RESULT_SUCCESS) {
-				if(adm_result == ADM_RESULT_TIMEOUT) {
-					DEBUG((EFI_D_ERROR, "mmc_bread: adm_read TIMEOUT, blknr= 0x%08lx\n", blknr));
-				}
-				else if(adm_result == ADM_RESULT_FAILURE) {
-					DEBUG((EFI_D_ERROR, "mmc_bread: adm_read FAILURE, blknr= 0x%08lx\n", blknr));
-				}
-				else {
-					DEBUG((EFI_D_ERROR, "mmc_bread: adm_read return val unrecognized, blknr= 0x%08lx\n", blknr));
-				}
+			if(read_a_block_dm(blknr, i, dst)) {
+				DEBUG((EFI_D_ERROR, "mmc_bread: adm_read error, blknr= 0x%08lx\n", blknr));
 				CpuDeadLoop();//HACK: debugging
             	return run_blkcnt;
-            }
+			}
 			DEBUG((EFI_D_ERROR, "Multiple block read using data mover finished\n"));
         }
 

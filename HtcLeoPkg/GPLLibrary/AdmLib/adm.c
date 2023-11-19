@@ -30,11 +30,10 @@
 #include <Library/TimerLib.h>
 #include <Library/LKEnvLib.h>
 #include <Library/adm.h>
+#include <Library/SdCard.h>
 
+#include <Chipset/iomap.h>
 #include <Chipset/adm_clk.h>
-
-// HACK
-#define MMC_BOOT_MCI_FIFO MSM_SDC2_BASE + 0x080//MCI_FIFO
 
 /* TODO: This ADM implementation is very specific for use by MMC.
  *       Replace with a generic ADM driver that can also be used
@@ -133,9 +132,6 @@ adm_transfer_mmc_data(unsigned char slot,
 	uint32_t adm_crci_num;
 	adm_result_t result = ADM_RESULT_SUCCESS;
 
-	/* Make sure slot value is in the range 1..4 */
-	ASSERT((slot >= 1) && (slot <= 4));
-
 	adm_crci_num = ADM_CRCI_SDC2;
 	row_len = SDCC_FIFO_SIZE;
 	num_rows = data_len / SDCC_FIFO_SIZE;
@@ -164,7 +160,7 @@ adm_transfer_mmc_data(unsigned char slot,
 				     (adm_crci_num << 3) | ADM_ADDR_MODE_BOX);
 
 		if (dir == ADM_MMC_READ) {
-			box_mode_entry[1] = MMC_BOOT_MCI_FIFO;	/* SRC addr    */
+			box_mode_entry[1] = MSM_SDC2_BASE + MCI_FIFO;	/* SRC addr    */
 			box_mode_entry[2] = (uint32_t) data_ptr;	/* DST addr    */
 			box_mode_entry[3] = ((row_len << 16) |	/* SRC row len */
 					     (row_len << 0));	/* DST row len */
@@ -174,7 +170,7 @@ adm_transfer_mmc_data(unsigned char slot,
 					     (row_offset << 0));	/* DST offset  */
 		} else {
 			box_mode_entry[1] = (uint32_t) data_ptr;	/* SRC addr    */
-			box_mode_entry[2] = MMC_BOOT_MCI_FIFO;	/* DST addr    */
+			box_mode_entry[2] = MSM_SDC2_BASE + MCI_FIFO;	/* DST addr    */
 			box_mode_entry[3] = ((row_len << 16) |	/* SRC row len */
 					     (row_len << 0));	/* DST row len */
 			box_mode_entry[4] = ((row_num << 16) |	/* SRC row #   */
