@@ -83,26 +83,8 @@ ReconfigFb()
 }
 
 VOID
-PrePiMain (
-  IN  UINTN   UefiMemoryBase,
-  IN  UINTN   StacksBase,
-  IN  UINT64  StartTimeStamp
-  )
+EnableCounter()
 {
-  EFI_HOB_HANDOFF_INFO_TABLE  *HobList;
-  EFI_STATUS                  Status;
-  CHAR8                       Buffer[100];
-  UINTN                       CharCount;
-  UINTN                       StacksSize;
-  FIRMWARE_SEC_PERFORMANCE    Performance;
-
-  // Initialize the architecture specific bits
-  ArchInitialize ();
-
-  // Reconfigure the framebuffer to 32bpp BGRA8888
-  ReconfigFb();
-
-  // There are still a few things to do
   /* enable cp10 and cp11 */
 	UINT32 val;
 	__asm__ volatile("mrc	p15, 0, %0, c1, c0, 2" : "=r" (val));
@@ -127,6 +109,30 @@ PrePiMain (
 	/* enable cycle counter */
 	en = (1<<31);
 	__asm__ volatile("mcr	p15, 0, %0, c9, c12, 1" :: "r" (en));
+}
+
+VOID
+PrePiMain (
+  IN  UINTN   UefiMemoryBase,
+  IN  UINTN   StacksBase,
+  IN  UINT64  StartTimeStamp
+  )
+{
+  EFI_HOB_HANDOFF_INFO_TABLE  *HobList;
+  EFI_STATUS                  Status;
+  CHAR8                       Buffer[100];
+  UINTN                       CharCount;
+  UINTN                       StacksSize;
+  FIRMWARE_SEC_PERFORMANCE    Performance;
+
+  // Initialize the architecture specific bits
+  ArchInitialize ();
+
+  // Reconfigure the framebuffer to 32bpp BGRA8888
+  ReconfigFb();
+
+  // Enable the counter (code from PrimeG2Pkg)
+  EnableCounter();
 
   // Initialize the Serial Port
   SerialPortInitialize ();
