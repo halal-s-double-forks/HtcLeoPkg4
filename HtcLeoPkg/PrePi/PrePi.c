@@ -38,7 +38,7 @@ PaintScreen(
   // Code from FramebufferSerialPortLib
 	char* Pixels = (void*)FixedPcdGet32(PcdMipiFrameBufferAddress);
 
-	// Set to black color.
+	// Set color.
 	for (UINTN i = 0; i < Width; i++)
 	{
 		for (UINTN j = 0; j < Height; j++)
@@ -57,29 +57,49 @@ PaintScreen(
 VOID
 ReconfigFb()
 {
-  // Paint the FB area to black
-  PaintScreen(FB_BGRA8888_BLACK);
+  UINT32 dma_cfg = 0;
 
-  // Move the FB if needed
-  if (FbAddr != 0x2A00000) {
-    MmioWrite32(MDP_DMA_P_BUF_ADDR, FbAddr);
-  }
+  PaintScreen(0);
 
-  // Stride
-	MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, Width * Bpp / 8);
-  
-  // Format (32bpp ARGB)
-  MmioWrite32(MDP_DMA_P_CONFIG, DMA_PACK_ALIGN_LSB|DMA_DITHER_EN|DMA_PACK_PATTERN_RGB|
-              DMA_OUT_SEL_LCDC|DMA_IBUF_FORMAT_XRGB8888|
-              DMA_DSTC0G_8BITS|DMA_DSTC1B_8BITS|DMA_DSTC2R_8BITS);
+  // Stop any previous transfers
+  MmioWrite32(MDP_LCDC_EN, 0);
 
-  MmioWrite32(MSM_MDP_BASE1 + LCDC_BASE + 0x0, 1); //flush?
-
-  //Ensure all transfers finished
   ArmInstructionSynchronizationBarrier();
   ArmDataMemoryBarrier();
 
-  MicroSecondDelay(10);
+  // Format
+  // https://github.com/marc1706/hd2_kernel/blob/f4951cda4525e4cba87a3de83fd00aee61bb2897/drivers/video/msm/mdp_lcdc.c#L152
+  dma_cfg |= (DMA_PACK_ALIGN_LSB |
+          DMA_PACK_PATTERN_RGB |
+          DMA_DITHER_EN);
+  
+  dma_cfg |= DMA_OUT_SEL_LCDC; // Select the DMA channel for LCDC
+  
+  // Format
+  if(Bpp == 16) {
+      dma_cfg |= DMA_IBUF_FORMAT_RGB565;
+  }
+  else if(Bpp == 24) {
+      dma_cfg |= DMA_IBUF_FORMAT_RGB888;
+  }
+  else if(Bpp == 32) {
+      dma_cfg |= DMA_IBUF_FORMAT_XRGB8888;
+  }
+
+  dma_cfg &= ~DMA_DST_BITS_MASK;
+  dma_cfg |= DMA_DSTC0G_8BITS|DMA_DSTC1B_8BITS|DMA_DSTC2R_8BITS;
+
+  MmioWrite32(MDP_DMA_P_CONFIG, dma_cfg);
+
+  // Stride
+  MmioWrite32(MDP_DMA_P_BUF_Y_STRIDE, (Bpp / 8) * Width);
+
+  // Ensure all transfers finished
+  ArmInstructionSynchronizationBarrier();
+  ArmDataMemoryBarrier();
+
+  // Enable LCDC
+  MmioWrite32(MDP_LCDC_EN, 0x1);
 }
 
 VOID
@@ -128,7 +148,7 @@ PrePiMain (
   // Initialize the architecture specific bits
   ArchInitialize ();
 
-  // Reconfigure the framebuffer to 32bpp BGRA8888
+  // Reconfigure the framebuffer based on PCD
   ReconfigFb();
 
   // Enable the counter (code from PrimeG2Pkg)

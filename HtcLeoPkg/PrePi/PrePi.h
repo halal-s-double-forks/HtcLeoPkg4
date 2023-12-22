@@ -35,6 +35,7 @@
 /* MDP-related defines */
 #define MSM_MDP_BASE1 	0xAA200000
 #define LCDC_BASE     	0xE0000
+#define MDP_LCDC_EN (0xAA2E0000)
 
 /* MDP 3.1 */
 #define DMA_DSTC0G_8BITS (3<<0)
@@ -66,6 +67,8 @@
 #define DMA_IBUF_FORMAT_XRGB8888		          (2 << 25)
 #define DMA_IBUF_FORMAT_xRGB8888_OR_ARGB8888  (1 << 26)
 #define DMA_IBUF_FORMAT_MASK			            (3 << 25)
+
+#define DMA_DST_BITS_MASK 0x3F
 
 /* MDP regs */
 #define REG_MDP(offset)                       MSM_MDP_BASE1 + offset
