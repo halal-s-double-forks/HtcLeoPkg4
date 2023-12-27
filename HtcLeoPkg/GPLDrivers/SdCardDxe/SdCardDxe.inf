@@ -33,6 +33,8 @@
   ENTRY_POINT                    = SdCardInitialize
 
 [Sources.common]
+  adm.c
+  mmc.c
   SdCardDxe.c
 
 [Packages]
