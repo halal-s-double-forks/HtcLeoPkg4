@@ -181,9 +181,9 @@ APRIORI DXE {
 
 
   // Mainline device tree blob
-  #FILE FREEFORM = 25462CDA-221F-47DF-AC1D-259CFAA4E326 {
-  #SECTION RAW = HtcLeoPkg/FdtBlob/qcom-qsd8250-htc-leo.dtb
-#}
+  FILE FREEFORM = 25462CDA-221F-47DF-AC1D-259CFAA4E326 {
+  SECTION RAW = HtcLeoPkg/FdtBlob/qcom-qsd8250-htc-leo.dtb
+}
 
 
   #
