@@ -30,8 +30,6 @@ UINTN Height = FixedPcdGet32(PcdMipiFrameBufferHeight);
 UINTN Bpp = FixedPcdGet32(PcdMipiFrameBufferPixelBpp);
 UINTN FbAddr = FixedPcdGet32(PcdMipiFrameBufferAddress);
 
-BOOLEAN IsMpuDisabled = FALSE;
-
 VOID
 PaintScreen(
   IN  UINTN   BgColor
@@ -142,39 +140,10 @@ DisableMpu(VOID)
 
   asm(" MRC p15, 0, R1, c1, c0, 0");     //read CP15 register 1
   asm(" BIC R1, R1, #0x1");
-  //asm(" DSB");
   ArmDataSynchronizationBarrier();
+
   asm(" MCR p15, 0, R1, c1, c0, 0");  //disable MPU
-  //asm(" ISB");
   ArmInstructionSynchronizationBarrier();
-
-  IsMpuDisabled = TRUE;
-}
-
-VOID
-CopyToHexagon(VOID)
-{
-  UINT32 WriteVal = 0x43454345;
-
-  if(IsMpuDisabled == FALSE) {
-    DEBUG((EFI_D_ERROR, "Trying to write to hexagon memory before MPU disable!!!\n"));
-  }
-  else 
-  {
-    DEBUG((EFI_D_ERROR, "Trying to write to hexagon memory after MPU disable!!!\n"));
-  }
-  MmioWrite32(0x11000000, WriteVal);
-
-  UINT32 ReadVal = MmioRead32(0x11000000);
-
-  DEBUG((EFI_D_ERROR, "Hexagon memory written %d\n", ReadVal));
-
-  if(ReadVal == WriteVal) {
-      DEBUG((EFI_D_ERROR, "Hexagon memory write success\n"));
-  }
-  else {
-      DEBUG((EFI_D_ERROR, "Hexagon memory write failed\n"));
-  }
 }
 
 VOID
@@ -232,17 +201,12 @@ PrePiMain (
               );
   PrePeiSetHobList (HobList);
 
-  CopyToHexagon();
+  // Disable the Memory Protection Unit so that we can write to the hexagon memory
   DisableMpu();
-  // Test copying after disable
-  CopyToHexagon();
 
   // Initialize MMU and Memory HOBs (Resource Descriptor HOBs)
   Status = MemoryPeim (UefiMemoryBase, FixedPcdGet32 (PcdSystemMemoryUefiRegionSize));
   ASSERT_EFI_ERROR (Status);
-
-  CopyToHexagon();
-  for(;;) {};
 
   // Create the Stacks HOB (reserve the memory for all stacks)
   if (ArmIsMpCore ()) {
