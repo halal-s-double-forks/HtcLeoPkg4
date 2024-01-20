@@ -1,5 +1,5 @@
 /** @file
-  This driver installs SMBIOS information for ARM Juno platforms
+  This driver installs SMBIOS information for HTC LEO platform
 
   Copyright (c) 2015, ARM Limited. All rights reserved.
 
@@ -27,19 +27,19 @@
 #include <Protocol/Smbios.h>
 
 #define TYPE0_STRINGS                                    \
-  "EFI Development Kit II / ARM LTD\0" /* Vendor */      \
-  "EDK II\0"                           /* BiosVersion */ \
-  __DATE__"\0"                         /* BiosReleaseDate */
+  "Htc Leo Revival Project\0"         /* Vendor */      \
+  "EDK II\0"                          /* BiosVersion */ \
+  __DATE__"\0"                        /* BiosReleaseDate */
 
 #define TYPE1_STRINGS                                   \
-  "HTC\0"                         /* Manufacturer */ \
-  "LEO\0"                     /* Product Name */ \
+  "HTC\0"                            /* Manufacturer */ \
+  "LEO\0"                            /* Product Name */ \
   "None\0"                           /* Version */      \
   "                    \0"           /* 20 character buffer */
 
 #define TYPE2_STRINGS                                     \
-  "HTC\0"                         /* Manufacturer */   \
-  "LEO\0"                     /* Product Name */   \
+  "HTC\0"                            /* Manufacturer */   \
+  "LEO\0"                            /* Product Name */   \
   "R0\0"                             /* Version */        \
   "Serial Not Set\0"                 /* Serial */         \
   "Base of Chassis\0"                /* board location */ \
@@ -52,14 +52,10 @@
   "Serial Not Set\0"                 /* Serial  */
 
 #define TYPE4_STRINGS                                               \
-  "BGA-1156\0"                       /* socket type */              \
+  "UNKNOWN\0"                        /* socket type */              \
   "ARM LTD\0"                        /* manufactuer */              \
-  "Cortex-A57\0"                     /* processor 1 description */  \
-  "Cortex-A53\0"                     /* processor 2 description */  \
-  "Cortex-A75\0"                     /* processor 2 description */  \
-  "0xd03\0"                          /* A53 part number */          \
-  "0xd07\0"                          /* A57 part number */          \
-  "0xd09\0"                          /* A75 part number */
+  "Cortex-A8\0"                      /* processor 1 description */  \
+  "0x0\0"                            /* A8 part number */
 
 #define TYPE7_STRINGS                              \
   "L1 Instruction\0"                 /* L1I  */    \
@@ -67,10 +63,7 @@
   "L2\0"                             /* L2   */
 
 #define TYPE9_STRINGS                              \
-  "PCIE_SLOT0\0"                     /* Slot0 */   \
-  "PCIE_SLOT1\0"                     /* Slot1 */   \
-  "PCIE_SLOT2\0"                     /* Slot2 */   \
-  "PCIE_SLOT3\0"                     /* Slot3 */
+  "\0"                               /* nothing */
 
 #define TYPE16_STRINGS                             \
   "\0"                               /* nothing */
@@ -151,17 +144,12 @@ typedef struct {
 // fixed constants, define a list of these constants
 // for our hardcoded tables
 enum SMBIOS_REFRENCE_HANDLES {
-    SMBIOS_HANDLE_A57_L1I = 0x1000,
-    SMBIOS_HANDLE_A57_L1D,
-    SMBIOS_HANDLE_A57_L2,
-    SMBIOS_HANDLE_A53_L1I,
-    SMBIOS_HANDLE_A53_L1D,
-    SMBIOS_HANDLE_A53_L2,
+    SMBIOS_HANDLE_A8_L1I,
+    SMBIOS_HANDLE_A8_L1D,
+    SMBIOS_HANDLE_A8_L2,
     SMBIOS_HANDLE_MOTHERBOARD,
     SMBIOS_HANDLE_CHASSIS,
-    SMBIOS_HANDLE_A72_CLUSTER,
-    SMBIOS_HANDLE_A57_CLUSTER,
-    SMBIOS_HANDLE_A53_CLUSTER,
+    SMBIOS_HANDLE_A8_CLUSTER,
     SMBIOS_HANDLE_MEMORY,
     SMBIOS_HANDLE_DIMM
 };
@@ -186,7 +174,7 @@ STATIC ARM_TYPE0 mArmDefaultType0 = {
         0,     // UINT8                     BiosSize
         {
             0, 0, 0, 0, 0, 0,
-            1, //PCI supported
+            0, //PCI supported
             0,
             1, //PNP supported
             0,
@@ -250,7 +238,7 @@ STATIC ARM_TYPE2 mArmDefaultType2 = {
         SMBIOS_HANDLE_CHASSIS,
         BaseBoardTypeMotherBoard,
         1,
-        {SMBIOS_HANDLE_A53_CLUSTER}, //,SMBIOS_HANDLE_A53_CLUSTER,SMBIOS_HANDLE_MEMORY},
+        {SMBIOS_HANDLE_A8_CLUSTER}, //,SMBIOS_HANDLE_A8_CLUSTER,SMBIOS_HANDLE_MEMORY},
     },
     TYPE2_STRINGS
 };
@@ -282,83 +270,13 @@ STATIC CONST ARM_TYPE3 mArmDefaultType3 = {
 };
 
 // Processor
-STATIC CONST ARM_TYPE4 mArmDefaultType4_a72 = {
+STATIC CONST ARM_TYPE4 mArmDefaultType4_a8 = {
     {
         {
             // SMBIOS_STRUCTURE Hdr
             EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION, // UINT8 Type
             sizeof (SMBIOS_TABLE_TYPE4),           // UINT8 Length
-            SMBIOS_HANDLE_A72_CLUSTER,
-        },
-        1, //socket type
-        3, //processor type CPU
-        ProcessorFamilyIndicatorFamily2, //processor family, acquire from field2
-        2, //manufactuer
-        {{0,}, {0.}}, //processor id
-        5, //version
-        {0, 0, 0, 0, 0, 1}, //voltage
-        0, //external clock
-        2800, //max speed
-        2800, //current speed
-        0x41, //status
-        ProcessorUpgradeOther,
-        SMBIOS_HANDLE_A57_L1I, //l1 cache handle
-        SMBIOS_HANDLE_A57_L2, //l2 cache handle
-        0xffff, //l3 cache handle
-        0, //serial not set
-        0, //asset not set
-        8, //part number
-        2, //core count in socket
-        2, //enabled core count in socket
-        0, //threads per socket
-        0xEC, // processor characteristics
-        ProcessorFamilyARM, //ARM core
-    },
-    TYPE4_STRINGS
-};
-
-STATIC CONST ARM_TYPE4 mArmDefaultType4_a57 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE4),           // UINT8 Length
-            SMBIOS_HANDLE_A57_CLUSTER,
-        },
-        1, //socket type
-        3, //processor type CPU
-        ProcessorFamilyIndicatorFamily2, //processor family, acquire from field2
-        2, //manufactuer
-        {{0,}, {0.}}, //processor id
-        3, //version
-        {0, 0, 0, 0, 0, 1}, //voltage
-        0, //external clock
-        2430, //max speed
-        2430, //current speed
-        0x41, //status
-        ProcessorUpgradeOther,
-        SMBIOS_HANDLE_A57_L1I, //l1 cache handle
-        SMBIOS_HANDLE_A57_L2, //l2 cache handle
-        0xffff, //l3 cache handle
-        0, //serial not set
-        0, //asset not set
-        7, //part number
-        2, //core count in socket
-        2, //enabled core count in socket
-        0, //threads per socket
-        0xEC, // processor characteristics
-        ProcessorFamilyARM, //ARM core
-    },
-    TYPE4_STRINGS
-};
-
-STATIC CONST ARM_TYPE4 mArmDefaultType4_a53 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_PROCESSOR_INFORMATION, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE4),           // UINT8 Length
-            SMBIOS_HANDLE_A53_CLUSTER,
+            SMBIOS_HANDLE_A8_CLUSTER,
         },
         1, //socket type
         3, //processor type CPU
@@ -368,18 +286,18 @@ STATIC CONST ARM_TYPE4 mArmDefaultType4_a53 = {
         4, //version
         {0, 0, 0, 0, 0, 1}, //voltage
         0, //external clock
-        1790, //max speed
-        1790, //current speed
+        1024, //max speed
+        1024, //current speed
         0x41, //status
         ProcessorUpgradeOther,
-        SMBIOS_HANDLE_A53_L1I, //l1 cache handle
-        SMBIOS_HANDLE_A53_L2, //l2 cache handle
-        0xffff, //l3 cache handle
+        SMBIOS_HANDLE_A8_L1I, //l1 cache handle
+        SMBIOS_HANDLE_A8_L2, //l2 cache handle
+        0, //l3 cache handle
         0, //serial not set
         0, //asset not set
         6, //part number
-        4, //core count in socket
-        4, //enabled core count in socket
+        1, //core count in socket
+        1, //enabled core count in socket
         0, //threads per socket
         0xEC, // processor characteristics
         ProcessorFamilyARM, //ARM core
@@ -388,35 +306,13 @@ STATIC CONST ARM_TYPE4 mArmDefaultType4_a53 = {
 };
 
 // Cache
-STATIC CONST ARM_TYPE7 mArmDefaultType7_a57_l1i = {
+STATIC CONST ARM_TYPE7 mArmDefaultType7_a8_l1i = {
     {
         {
             // SMBIOS_STRUCTURE Hdr
             EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
             sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_A57_L1I,
-        },
-        1,
-        0x380, //L1 enabled, unknown WB
-        64, //64k i cache max
-        64, //64k installed
-        {0, 1}, //SRAM type
-        {0, 1}, //SRAM type
-        0, //unkown speed
-        CacheErrorParity, //parity checking
-        CacheTypeInstruction, //instruction cache
-        CacheAssociativityOther, //three way
-    },
-    TYPE7_STRINGS
-};
-
-STATIC CONST ARM_TYPE7 mArmDefaultType7_a53_l1i = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_A53_L1I,
+            SMBIOS_HANDLE_A8_L1I,
         },
         1,
         0x380, //L1 enabled, unknown WB
@@ -432,35 +328,13 @@ STATIC CONST ARM_TYPE7 mArmDefaultType7_a53_l1i = {
     TYPE7_STRINGS
 };
 
-STATIC CONST ARM_TYPE7 mArmDefaultType7_a57_l1d = {
+STATIC CONST ARM_TYPE7 mArmDefaultType7_a8_l1d = {
     {
         {
             // SMBIOS_STRUCTURE Hdr
             EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
             sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_A57_L1D,
-        },
-        2,
-        0x180, //L1 enabled, WB
-        32, //32k d cache max
-        32, //32k installed
-        {0, 1}, //SRAM type
-        {0, 1}, //SRAM type
-        0, //unkown speed
-        CacheErrorSingleBit, //ECC checking
-        CacheTypeData, //instruction cache
-        CacheAssociativity2Way, //two way associative
-    },
-    TYPE7_STRINGS
-};
-
-STATIC CONST ARM_TYPE7 mArmDefaultType7_a53_l1d = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_A53_L1D,
+            SMBIOS_HANDLE_A8_L1D,
         },
         2,
         0x180, //L1 enabled, WB
@@ -476,141 +350,26 @@ STATIC CONST ARM_TYPE7 mArmDefaultType7_a53_l1d = {
     TYPE7_STRINGS
 };
 
-STATIC CONST ARM_TYPE7 mArmDefaultType7_a57_l2 = {
+STATIC CONST ARM_TYPE7 mArmDefaultType7_a8_l2 = {
     {
         {
             // SMBIOS_STRUCTURE Hdr
             EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
             sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_A57_L2,
+            SMBIOS_HANDLE_A8_L2,
         },
         3,
         0x181, //L2 enabled, WB
-        2048, //2M d cache max
-        2048, //2M installed
+        256, //256KB D cache max
+        256, //256KB installed
         {0, 1}, //SRAM type
         {0, 1}, //SRAM type
-        0, //unkown speed
+        128, //speed: 128 B/line
         CacheErrorSingleBit, //ECC checking
         CacheTypeUnified, //instruction cache
         CacheAssociativity16Way, //16 way associative
     },
     TYPE7_STRINGS
-};
-
-STATIC CONST ARM_TYPE7 mArmDefaultType7_a53_l2 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_CACHE_INFORMATION, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE7),       // UINT8 Length
-            SMBIOS_HANDLE_A53_L2,
-        },
-        3,
-        0x181, //L2 enabled, WB
-        1024, //1M D cache max
-        1024, //1M installed
-        {0, 1}, //SRAM type
-        {0, 1}, //SRAM type
-        0, //unkown speed
-        CacheErrorSingleBit, //ECC checking
-        CacheTypeUnified, //instruction cache
-        CacheAssociativity16Way, //16 way associative
-    },
-    TYPE7_STRINGS
-};
-
-// Slots
-STATIC CONST ARM_TYPE9 mArmDefaultType9_0 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_SYSTEM_SLOTS, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE9),  // UINT8 Length
-            SMBIOS_HANDLE_PI_RESERVED,
-        },
-        1, //slot 0
-        SlotTypePciExpressGen2X4,
-        SlotDataBusWidth1X,
-        SlotUsageUnknown,
-        SlotLengthShort,
-        0,
-        {1}, //unknown
-        {1, 0, 1}, //PME and SMBUS
-        0,
-        2,
-        1,
-    },
-    TYPE9_STRINGS
-};
-
-STATIC CONST ARM_TYPE9 mArmDefaultType9_1 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_SYSTEM_SLOTS, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE9),  // UINT8 Length
-            SMBIOS_HANDLE_PI_RESERVED,
-        },
-        1, //slot 0
-        SlotTypePciExpressGen2X4,
-        SlotDataBusWidth1X,
-        SlotUsageUnknown,
-        SlotLengthShort,
-        0,
-        {1},
-        {1, 0, 1}, //PME and SMBUS
-        0,
-        2,
-        2,
-    },
-    TYPE9_STRINGS
-};
-
-STATIC CONST ARM_TYPE9 mArmDefaultType9_2 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_SYSTEM_SLOTS, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE9),  // UINT8 Length
-            SMBIOS_HANDLE_PI_RESERVED,
-        },
-        1, //slot 0
-        SlotTypePciExpressGen2X8,
-        SlotDataBusWidth4X,
-        SlotUsageUnknown,
-        SlotLengthShort,
-        0,
-        {1},
-        {1, 0, 1}, //PME and SMBUS
-        0,
-        2,
-        3,
-    },
-    TYPE9_STRINGS
-};
-
-STATIC CONST ARM_TYPE9 mArmDefaultType9_3 = {
-    {
-        {
-            // SMBIOS_STRUCTURE Hdr
-            EFI_SMBIOS_TYPE_SYSTEM_SLOTS, // UINT8 Type
-            sizeof (SMBIOS_TABLE_TYPE9),  // UINT8 Length
-            SMBIOS_HANDLE_PI_RESERVED,
-        },
-        1, //slot 0
-        SlotTypePciExpressGen2X16,
-        SlotDataBusWidth4X,
-        SlotUsageUnknown,
-        SlotLengthShort,
-        0,
-        {1},
-        {1, 0, 1}, //PME and SMBUS
-        0,
-        2,
-        0xc,
-    },
-    TYPE9_STRINGS
 };
 
 // Memory array
@@ -624,8 +383,10 @@ STATIC CONST ARM_TYPE16 mArmDefaultType16 = {
         },
         MemoryArrayLocationSystemBoard, //on motherboard
         MemoryArrayUseSystemMemory,     //system RAM
-        MemoryErrorCorrectionNone,      //Juno doesn't have ECC RAM
-        0x800000, //8GB
+        MemoryErrorCorrectionUnknown,   // MemoryErrorCorrection;          ///< The
+                                    // enumeration value from
+                                    // MEMORY_ERROR_CORRECTION.
+        0x1E800000, //576MB
         0xFFFE,   //No error information structure
         0x1,      //soldered memory
     },
@@ -645,13 +406,12 @@ STATIC CONST ARM_TYPE17 mArmDefaultType17 = {
         0xFFFE,               //no errors
         64, //single DIMM, no ECC is 64bits (for ecc this would be 72)
         64, //data width of this device (64-bits)
-        0x2000, //8GB
+        0x0800, //512MB
         0x0B,   //row of chips
         0,      //not part of a set
         1,      //right side of board
         2,      //bank 0
-        //  MemoryTypeLpddr4, //LP DDR4, isn't defined yet
-        MemoryTypeDdr4,                  //LP DDR4
+        MemoryTypeLpddr,                  //LP DDR
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, //unbuffered
         2133,                            //2133Mhz DDR
         0, //varies between diffrent production runs
@@ -677,8 +437,8 @@ STATIC CONST ARM_TYPE19 mArmDefaultType19 = {
         0xFFFFFFFF,
         SMBIOS_HANDLE_DIMM, //handle
         1,
-        0x080000000,        //starting addr of first 2GB
-        0x100000000,        //ending addr of first 2GB
+        0x11800000,        //starting addr of first 576MB
+        0x30000000,        //ending addr of first 576MB
     },
     TYPE19_STRINGS
 };
@@ -703,14 +463,10 @@ STATIC CONST VOID *DefaultCommonTables[] = {
     &mArmDefaultType1,
     &mArmDefaultType2,
     &mArmDefaultType3,
-    &mArmDefaultType7_a53_l1i,
-    &mArmDefaultType7_a53_l1d,
-    &mArmDefaultType7_a53_l2,
-    &mArmDefaultType4_a53,
-    &mArmDefaultType9_0,
-    &mArmDefaultType9_1,
-    &mArmDefaultType9_2,
-    &mArmDefaultType9_3,
+    &mArmDefaultType7_a8_l1i,
+    &mArmDefaultType7_a8_l1d,
+    &mArmDefaultType7_a8_l2,
+    &mArmDefaultType4_a8,
     &mArmDefaultType16,
     &mArmDefaultType17,
     //    &mArmDefaultType19, //memory range type 19 dynamically generated
@@ -719,10 +475,10 @@ STATIC CONST VOID *DefaultCommonTables[] = {
 };
 
 STATIC CONST VOID *DefaultTablesR0R1[] = {
-    &mArmDefaultType7_a57_l1i,
-    &mArmDefaultType7_a57_l1d,
-    &mArmDefaultType7_a57_l2,
-    &mArmDefaultType4_a57,
+    &mArmDefaultType7_a8_l1i,
+    &mArmDefaultType7_a8_l1d,
+    &mArmDefaultType7_a8_l2,
+    &mArmDefaultType4_a8,
     NULL
 };
 
@@ -795,7 +551,7 @@ InstallAllStructures (
     EFI_STATUS                Status = EFI_SUCCESS;
     VOID                      *ExtraTables = DefaultTablesR0R1;
     //
-    // Add all Juno table entries
+    // Add all Leo table entries
     //
     Status = InstallStructures (Smbios, DefaultCommonTables);
     ASSERT_EFI_ERROR (Status);

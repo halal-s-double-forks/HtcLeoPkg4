@@ -1,11 +1,11 @@
 [FD.QSD8250_UEFI]
 BaseAddress   = 0x2C000000|gArmTokenSpaceGuid.PcdFdBaseAddress  # The base address of the Firmware in NOR Flash.
-Size          = 0x00200000|gArmTokenSpaceGuid.PcdFdSize         # The size in bytes of the FLASH Device
+Size          = 0x00100000|gArmTokenSpaceGuid.PcdFdSize         # The size in bytes of the FLASH Device
 ErasePolarity = 1
 
 # This one is tricky, it must be: BlockSize * NumBlocks = Size
 BlockSize     = 0x00001000
-NumBlocks     = 0x200
+NumBlocks     = 0x100
 
 ################################################################################
 #
@@ -24,7 +24,7 @@ NumBlocks     = 0x200
 ################################################################################
 
 # 512 bytes of configuration header & 8 bytes of image header
-0x00000000|0x00200000
+0x00000000|0x00100000
 gArmTokenSpaceGuid.PcdFvBaseAddress|gArmTokenSpaceGuid.PcdFvSize
 FV = FVMAIN_COMPACT
 
@@ -119,7 +119,6 @@ APRIORI DXE {
   INF HtcLeoPkg/Drivers/TimerDxe/TimerDxe.inf
 
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
-  # INF HtcLeoPkg/Drivers/HeartbeatDxe/HeartbeatDxe.inf
 
   # SoC Drivers
   INF HtcLeoPkg/GPLDrivers/ClockDxe/ClockDxe.inf
@@ -178,7 +177,7 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
   INF MdeModulePkg/Universal/Acpi/AcpiPlatformDxe/AcpiPlatformDxe.inf
   INF MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.inf
-  # INF RuleOverride = ACPITABLE HtcLeoPkg/AcpiTables/AcpiTables.inf
+  INF RuleOverride = ACPITABLE HtcLeoPkg/AcpiTables/AcpiTables.inf
 
 
   // Mainline device tree blob

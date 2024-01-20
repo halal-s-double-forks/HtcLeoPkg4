@@ -39,10 +39,11 @@
   gEmbeddedClockProtocolGuid = { 0xb27625b5, 0x0b6c, 0x4614, { 0xaa, 0x3c, 0x33, 0x13, 0xb5, 0x1d, 0x36, 0x48 } }
   gHtcLeoI2CProtocolGuid = { 0x2c898318, 0x41c1, 0x4309, { 0x89, 0x8a, 0x2f, 0x55, 0xc8, 0xcf, 0x0b, 0x85 } }
   gHtcLeoMicropProtocolGuid = { 0x2c898318, 0x41c1, 0x4309, { 0x89, 0x8a, 0x2f, 0x55, 0xc8, 0xcf, 0x0b, 0x86 } }
+  gTlmmGpioProtocolGuid = { 0x2c898318, 0x41c1, 0x4309, { 0x89, 0x8a, 0x2f, 0x55, 0xc8, 0xcf, 0x0b, 0x87 } }
 
 [PcdsFixedAtBuild.common]
   # Simple FrameBuffer
-  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x2a00000|UINT32|0x0000a400
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0|UINT32|0x0000a400
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth|480|UINT32|0x0000a401
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight|800|UINT32|0x0000a402
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferPixelBpp|32|UINT32|0x0000a403
@@ -52,6 +53,11 @@
   # Memory serial
   gHtcLeoPkgTokenSpaceGuid.PcdPstoreAddress|0x2FE00000|UINT32|0x0000a406
   gHtcLeoPkgTokenSpaceGuid.PcdPstoreSize|0x200000|UINT32|0x0000a407
+
+  # PcdSerialRegisterBase   - Define a base address of UEFI console UART
+  # PcdKdUartInstance - UART instance that should be used for Windows
+  gHtcLeoPkgTokenSpaceGuid.PcdKdUartInstance|1|UINT32|0x11
+  gHtcLeoPkgTokenSpaceGuid.PcdSerialRegisterBase|0x00000000|UINT32|0x12
 
   # GPT Timer
   gHtcLeoPkgTokenSpaceGuid.PcdMsmGptBase|0xAC100000|UINT32|0x0000a408

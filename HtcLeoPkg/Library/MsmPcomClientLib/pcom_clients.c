@@ -1,42 +1,4 @@
 /*
- * Copyright (c) 2009-2010, Google Inc. All rights reserved.
- * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
- * Copyright (c) 2011-2012, Shantanu Gupta <shans95g@gmail.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *  * Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  * Neither the name of Google, Inc. nor the names of its contributors
- *    may be used to endorse or promote products derived from this
- *    software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-#include <Library/IoLib.h>
-#include <Library/ArmLib.h>
-#include <Library/LKEnvLib.h>
-
-#include <Chipset/clock.h>
-#include <Library/pcom.h>
-
-/*
  * Copyright (c) 2007-2010, Code Aurora Forum. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
@@ -49,13 +11,21 @@
  * GNU General Public License for more details.
  *
  */
-
+#include <Library/IoLib.h>
+#include <Library/ArmLib.h>
+#include <Library/DebugLib.h>
+#include <Library/LKEnvLib.h>
 #include <Library/reg.h>
 #include <Library/pcom.h>
+#include <Chipset/clock.h>
 #include <Chipset/gpio.h>
 #include <Chipset/iomap.h>
 
 #include <Library/pcom_clients.h>
+
+#define PCOM_VREG_SDC PM_VREG_PDOWN_GP6_ID //?
+#define PCOM_MPP_FOR_USB_VBUS PM_MPP_16 //?
+#define PROC_COMM_END_CMDS 0xFFFF 
 
 void pcom_vreg_control(unsigned vreg, unsigned level, unsigned state)
 {
@@ -76,8 +46,6 @@ void pcom_vreg_control(unsigned vreg, unsigned level, unsigned state)
     }while(PCOM_CMD_SUCCESS != readl(APP_STATUS));
 }
 
-#define PCOM_VREG_SDC PM_VREG_PDOWN_GP6_ID //?
-
 void pcom_sdcard_power(int state)
 {
     unsigned v = PCOM_VREG_SDC;
@@ -88,9 +56,9 @@ void pcom_sdcard_power(int state)
 		msm_proc_comm(PCOM_VREG_SWITCH, &v, &s);
 
         if(PCOM_CMD_SUCCESS != readl(APP_STATUS)) {
-			//printf("Error: PCOM_VREG_SWITCH failed...retrying\n");
+			DEBUG((EFI_D_INFO, "Error: PCOM_VREG_SWITCH failed...retrying\n"));
 		} else {
-			//printf("PCOM_VREG_SWITCH DONE\n");
+			DEBUG((EFI_D_INFO, "PCOM_VREG_SWITCH DONE\n"));
 			break;
 		}
     }
@@ -146,7 +114,6 @@ void pcom_sdcard_gpio_config(int instance)
 }
 
 //---- USB HS related proc_comm clients
-#define PCOM_MPP_FOR_USB_VBUS PM_MPP_16 //?
 void pcom_usb_vbus_power(int state)
 {
     unsigned v = PCOM_MPP_FOR_USB_VBUS;
@@ -155,9 +122,9 @@ void pcom_usb_vbus_power(int state)
 	msm_proc_comm(PCOM_PM_MPP_CONFIG, &v, &s);
 
     if(PCOM_CMD_SUCCESS != readl(APP_STATUS)) {
-        //printf("Error: PCOM_MPP_CONFIG failed... not retrying\n");
+        DEBUG((EFI_D_INFO, "Error: PCOM_MPP_CONFIG failed... not retrying\n"));
     } else {
-        //printf("PCOM_MPP_CONFIG DONE\n");
+        DEBUG((EFI_D_INFO, "PCOM_MPP_CONFIG DONE\n"));
     }
 }
 
@@ -168,10 +135,10 @@ void pcom_usb_reset_phy(void)
         msm_proc_comm(PCOM_MSM_HSUSB_PHY_RESET, 0, 0);
 
         if(PCOM_CMD_SUCCESS != readl(APP_STATUS)) {
-            //printf("Error: PCOM_MSM_HSUSB_PHY_RESET failed...not retrying\n");
+            DEBUG((EFI_D_INFO, "Error: PCOM_MSM_HSUSB_PHY_RESET failed...not retrying\n"));
 			break; // remove to retry
         } else {
-            //printf("PCOM_MSM_HSUSB_PHY_RESET DONE\n");
+            DEBUG((EFI_D_INFO, "PCOM_MSM_HSUSB_PHY_RESET DONE\n"));
             break;
         }
     }
@@ -404,7 +371,6 @@ UINT32 pcom_get_lcdc_clk(void)
     return pcom_clock_get_rate(PCOM_MDP_LCDC_PCLK_CLK);
 }
 
-#define PROC_COMM_END_CMDS 0xFFFF 
 void pcom_end_cmds(void)
 {
 	msm_proc_comm(PROC_COMM_END_CMDS, 0, 0);

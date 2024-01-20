@@ -5,5 +5,6 @@ ImageResources/Tools/*.nb
 ImageResources/Tools/*.bin
 ImageResources/Tools/nbgen
 ImageResources/uefi.img
+ImageResources/LEOIMG.nbh
 workspace/Build/
 .vscode/*

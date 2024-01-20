@@ -21,5 +21,7 @@ fi
 
 cd ImageResources/Tools
 ./nbgen os.nb
-./yang -F LEOIMG.nbh -f logo.nb,os.nb -t 0x600,0x400 -s 64 -d PB8110000 -c 11111111 -v EDK2 -l WWE
+./yang -F ../LEOIMG.nbh -f logo.nb,os.nb -t 0x600,0x400 -s 64 -d PB8110000 -c 11111111 -v EDK2 -l WWE
+rm *.bin
+rm os.nb
 cd ../../

@@ -18,11 +18,9 @@ enum setrate_reason {
 	SETRATE_CPUFREQ = 0,
 	SETRATE_SWFI,
 };
-unsigned acpuclk_init_done;
+
 void clock_config(UINT32 ns, UINT32 md, UINT32 ns_addr, UINT32 md_addr);
 int acpuclk_set_rate(unsigned long rate, enum setrate_reason reason);
 unsigned long acpuclk_get_rate(void);
 void msm_acpu_clock_init(int freq_num);
 #endif //__QSD8K_PLATFORM_ACPUCLOCK_H_
-
-//#include <platform/iomap.h>

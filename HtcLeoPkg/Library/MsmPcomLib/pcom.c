@@ -31,14 +31,12 @@
  */
 #include <Library/IoLib.h>
 #include <Library/ArmLib.h>
-
+#include <Library/DebugLib.h>
 #include <Library/LKEnvLib.h>
 #include <Library/TimerLib.h>
 #include <Library/pcom.h>
 
 #include <Chipset/clock.h>
-
-extern void dsb();
 
 /* This function always returns 0, unless future versions check for
  * modem crash.
@@ -65,7 +63,7 @@ int msm_pcom_wait_for_modem_ready()
 
 static inline void notify_modem(void)
 {
-	dsb();
+	ArmDataSynchronizationBarrier();
 	//wait for all the previous data to be written then fire
 	writel(1, MSM_A2M_INT(6));
 }
@@ -92,7 +90,7 @@ int msm_proc_comm(unsigned cmd, unsigned *data1, unsigned *data2)
 		if (data2) *data2 = readl(APP_DATA2);
 		ret = 0;
 	} else {
-		//dprintf(CRITICAL, "[PCOM]: FAIL [cmd:%x D1:%x D2:%x]\n", cmd, (unsigned)data1, (unsigned)data2);
+		DEBUG((EFI_D_INFO, "[PCOM]: FAIL [cmd:%x D1:%x D2:%x]\n", cmd, (unsigned)data1, (unsigned)data2));
 		ret = -1;
 	}
 

@@ -1,2 +1,0 @@
-This library was based on : 
-* interrupt.c from lk sources: https://github.com/n0d3/lk/blob/BlackCLK_ex_2/platform/qsd8k/interrupts.c

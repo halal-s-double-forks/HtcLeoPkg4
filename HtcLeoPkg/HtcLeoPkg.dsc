@@ -26,8 +26,7 @@
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = HtcLeoPkg/HtcLeoPkg.fdf
 
-  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = TRUE
-  DEFINE USE_MEMORY_FOR_SERIAL_OUTPUT = 0
+  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = 0
 
 !include HtcLeoPkg/CommonDsc.dsc.inc
 
@@ -89,7 +88,6 @@
   StrLib|HtcLeoPkg/Library/StrLib/StrLib.inf
   PTableLib|HtcLeoPkg/Library/PTableLib/PTableLib.inf
   SmemLib|HtcLeoPkg/Drivers/SmemDxe/SmemImplLib.inf
-  MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
 
@@ -142,6 +140,9 @@
 
   gEmbeddedTokenSpaceGuid.PcdMetronomeTickPeriod|1000
 
+  gHtcLeoPkgTokenSpaceGuid.PcdSerialRegisterBase|0x02020000   # UART1
+  gHtcLeoPkgTokenSpaceGuid.PcdKdUartInstance|1  
+
   #
   #
   # Fastboot
@@ -154,7 +155,7 @@
   #
   gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable|TRUE
 
-  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x2a00000
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x02A00000
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth|480
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight|800
 
@@ -199,7 +200,6 @@
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
-  HtcLeoPkg/Drivers/HeartbeatDxe/HeartbeatDxe.inf
 
   MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
   HtcLeoPkg/Drivers/ConSplitterDxe/ConSplitterDxe.inf
@@ -267,6 +267,8 @@
   #
   EmbeddedPkg/Application/AndroidFastboot/AndroidFastbootApp.inf
 
+
+  # Tetris
   HtcLeoPkg/Application/TetrisApp/tetris.inf
 
   #
@@ -283,7 +285,7 @@
   MdeModulePkg/Universal/Acpi/AcpiTableDxe/AcpiTableDxe.inf
   MdeModulePkg/Universal/Acpi/AcpiPlatformDxe/AcpiPlatformDxe.inf
   MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.inf
-#  HtcLeoPkg/AcpiTables/AcpiTables.inf
+  HtcLeoPkg/AcpiTables/AcpiTables.inf
 
   #
   # SMBIOS Support

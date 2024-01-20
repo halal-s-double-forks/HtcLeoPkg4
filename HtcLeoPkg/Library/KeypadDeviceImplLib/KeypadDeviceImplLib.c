@@ -7,8 +7,17 @@
 #include <Library/KeypadDeviceImplLib.h>
 #include <Library/UefiLib.h>
 #include <Protocol/KeypadDevice.h>
+#include <Protocol/GpioTlmm.h>
 
-#define HTCLEO_GPIO_KP_LED 48
+#include <Device/Gpio.h>
+
+// Cached copy of the Hardware Gpio protocol instance
+TLMM_GPIO *gGpio = NULL;
+
+// Global variables
+EFI_EVENT m_CallbackTimer = NULL;
+EFI_EVENT EfiExitBootServicesEvent = (EFI_EVENT)NULL;
+BOOLEAN timerRunning = FALSE;
 
 typedef enum {
   KEY_DEVICE_TYPE_UNKNOWN,
@@ -29,7 +38,6 @@ typedef struct {
   BOOLEAN ActiveLow;
 
   // gpio keymatrix
-
   UINT8 GpioIn;
   UINT8 GpioOut;
 
@@ -83,12 +91,28 @@ KEY_CONTEXT_PRIVATE *KeypadKeyCodeToKeyContext(UINT32 KeyCode)
     return NULL;
 }
 
+VOID
+EFIAPI
+ExitBootServicesEvent (
+  IN EFI_EVENT  Event,
+  IN VOID       *Context
+  )
+{
+  // Make sure the LED is disabled
+  gGpio->Set(HTCLEO_GPIO_KP_LED, 0);
+}
+
 RETURN_STATUS
 EFIAPI
 KeypadDeviceImplConstructor(VOID)
 {
   UINTN                Index;
+  EFI_STATUS           Status = EFI_SUCCESS;
   KEY_CONTEXT_PRIVATE *StaticContext;
+
+  // Find the gpio controller protocol.  ASSERT if not found.
+  Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
+  ASSERT_EFI_ERROR (Status);
 
   // Reset all keys
   for (Index = 0; Index < (sizeof(KeyList) / sizeof(KeyList[0])); Index++) {
@@ -154,7 +178,15 @@ KeypadDeviceImplConstructor(VOID)
   StaticContext->ActiveLow  = 0x1 & 0x1;
   StaticContext->IsValid    = TRUE;
 
-  return RETURN_SUCCESS;
+  // Register for ExitBootServicesEvent
+  Status = gBS->CreateEvent (
+             EVT_SIGNAL_EXIT_BOOT_SERVICES,
+             TPL_NOTIFY,
+             ExitBootServicesEvent,
+             NULL,
+             &EfiExitBootServicesEvent);
+
+  return Status;
 }
 
 EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
@@ -183,18 +215,11 @@ EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
   return EFI_SUCCESS;
 }
 
-extern void gpio_set(unsigned n, unsigned on);
-extern int gpio_get(unsigned n);
-
-EFI_EVENT m_CallbackTimer = NULL;
-EFI_EVENT m_ExitBootServicesEvent = NULL;
-BOOLEAN timerRunning = FALSE;
-
 // Callback function to disable the GPIO after a certain time
 VOID EFIAPI DisableKeyPadLed(IN EFI_EVENT Event, IN VOID *Context)
 {
     // Disable the GPIO
-    gpio_set(HTCLEO_GPIO_KP_LED, 0);
+    gGpio->Set(HTCLEO_GPIO_KP_LED, 0);
     timerRunning = FALSE;
 }
 
@@ -207,7 +232,7 @@ VOID EnableKeypadLedWithTimer(VOID)
         timerRunning = FALSE;
     }
 
-    gpio_set(HTCLEO_GPIO_KP_LED, 1);
+    gGpio->Set(HTCLEO_GPIO_KP_LED, 1);
     EFI_STATUS Status;
 
     Status = gBS->CreateEvent(
@@ -242,10 +267,10 @@ EFI_STATUS KeypadDeviceImplGetKeys(
         // get status
         if (Context->DeviceType == KEY_DEVICE_TYPE_LEGACY) {
             // implement hd2 gpio stuff here
-            GpioStatus = gpio_get(Context->Gpio);
+            GpioStatus = gGpio->Get(Context->Gpio);
         } else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-            gpio_set(Context->GpioOut, 0);
-            GpioStatus = gpio_get(Context->GpioIn);
+            gGpio->Set(Context->GpioOut, 0);
+            GpioStatus = gGpio->Get(Context->GpioIn);
         } else {
             continue;
         }
@@ -258,7 +283,7 @@ EFI_STATUS KeypadDeviceImplGetKeys(
         }
 
         if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-            gpio_set(Context->GpioOut, 1);
+            gGpio->Set(Context->GpioOut, 1);
         }
 
         LibKeyUpdateKeyStatus(

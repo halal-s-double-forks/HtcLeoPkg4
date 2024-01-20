@@ -45,3 +45,7 @@
   gArmTokenSpaceGuid.PcdSystemMemorySize
   gArmTokenSpaceGuid.PcdFdBaseAddress
   gArmTokenSpaceGuid.PcdFdSize
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferPixelBpp

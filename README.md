@@ -2,16 +2,18 @@
 
 ## Status 
 
-| Function      | Notes                                   | Status |
-|---------------|-----------------------------------------|--------|
-| GPIO          | Based on cLK driver                     |   ✅   |
-| SD Card       | Based on cLK driver                     |   ✅   |
-| I2C           | Driver exists in cLK                    |   ✅   |
-| Panel         | Driver exists in cLK                    |   ❌   |
-| Charging      | Supported in cLK since 1.5.x            |   ❌   |
-| Battery Gauge | Supported in cLK since 1.5.x (needs i2c)|   ❌   |
-| USB           | Driver exists in cLK                    |   ❌   |
-| Keypad        | Loosely based on cLK driver             |   ✅   |
+| Function      | Notes                                            | Status |
+|---------------|--------------------------------------------------|--------|
+| GPIO          | Based on cLK driver                              |   ✅   |
+| SD Card       | Based on cLK driver                              |   ✅   |
+| NAND          | Driver exists in cLK (probably won't be added)   |   ❌   |
+| I2C           | Based on cLK driver                              |   ✅   |
+| Panel         | Driver exists in cLK                             |   ❌   |
+| Touchscreen   | Driver exists in linux                           |   ❌   |
+| Charging      | Supported in cLK since 1.5.x                     |   ❌   |
+| Battery Gauge | Supported in cLK since 1.5.x                     |   ❌   |
+| USB           | Driver exists in cLK                             |   ❌   |
+| Keypad        | Loosely based on cLK driver                      |   ✅   |
 
 ## Loading
 UEFI can be either chainloaded as a kernel from cLK, as well as flashed to boot directly from HSPL.
