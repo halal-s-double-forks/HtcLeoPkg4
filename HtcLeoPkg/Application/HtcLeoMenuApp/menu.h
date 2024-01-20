@@ -17,6 +17,8 @@ void Option2Function(
     IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void ExitMenu(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void StartTetris(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
+void HexagonFunction(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable);
 void PrepareConsole(
     IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *Cout,
     OUT EFI_SIMPLE_TEXT_OUTPUT_MODE    *ModeToStore);

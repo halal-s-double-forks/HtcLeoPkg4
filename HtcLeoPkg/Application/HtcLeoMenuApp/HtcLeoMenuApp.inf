@@ -14,18 +14,21 @@
   CommonHeader.c
 
 [Packages]
+  ArmPkg/ArmPkg.dec
   MdePkg/MdePkg.dec
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   HtcLeoPkg/HtcLeoPkg.dec
   
 [LibraryClasses]
+  ArmLib
   UefiApplicationEntryPoint
   UefiLib
   UefiBootServicesTableLib 
   MemoryAllocationLib 
   BaseMemoryLib
   TimerLib
+  IoLib
   ResetSystemLib
   UefiBootManagerLib
 

@@ -79,7 +79,7 @@ static ARM_MEMORY_REGION_DESCRIPTOR_EX gDeviceMemoryDescriptorEx[] =
   {"HLOS 1",            0x03200000, 0x00E00000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
 
   /* SDRAM (EBI1) */
-  {"SDRAM (MPU'd)",     0x10000000, 0x01800000, NoHob,  MMAP_IO, INITIALIZED,   Conv,   NS_DEVICE},
+  {"Hexagon memory",    0x10000000, 0x01800000, AddMem, MEM_RES, WRITE_THROUGH, MaxMem, WRITE_THROUGH},
   /* SDRAM main */
   {"SDRAM main",        0x11800000, 0x0E800000, AddMem, SYS_MEM, SYS_MEM_CAP,   Conv,   WRITE_BACK},
   //{"Wince dmesg",     0x1FE00000, 0x00100000, AddMem, SYS_MEM, SYS_MEM_CAP,   Reserv, NS_DEVICE},

@@ -1,10 +1,15 @@
 #include <Uefi.h>
+#include <PiDxe.h>
+#include <Library/UefiLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
+#include <Library/IoLib.h>
+#include <Library/ArmLib.h>
+
 #include <Library/HtcLeoPlatformResetLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiLib.h>
 #include <Library/UefiBootManagerLib.h>
 #include <Library/TimerLib.h>
 #include <Protocol/HtcLeoMicroP.h>
@@ -27,7 +32,8 @@ MenuEntry MenuOptions[] =
     {3, L"Play Tetris", TRUE, &StartTetris},
     {4, L"Reboot Menu", TRUE, &RebootMenu},
     {5, L"Exit to Bootmgr", TRUE, &EnterBootMgr},
-    {6, L"Exit", TRUE, &ExitMenu}
+    {6, L"Test Hexagon", TRUE, &HexagonFunction},
+    {7, L"Exit", TRUE, &ExitMenu}
 };
 
 UINTN MenuOptionCount = 0;
@@ -292,6 +298,69 @@ void Option2Function(
   htcleo_panel_set_brightness(9);
 }
 
+#define HexagonMemStart 0x10000000
+#define HexagonMemSize 0x01800000
+
+VOID
+TestHexagonCopy(VOID)
+{
+  UINT32 WriteVal = 0x43454345;
+
+  MmioWrite32(HexagonMemStart, WriteVal);
+  UINT32 ReadVal = MmioRead32(HexagonMemStart);
+
+  if(ReadVal == WriteVal) {
+      DEBUG((EFI_D_ERROR, "Hexagon memory write success\n"));
+  }
+  else {
+      DEBUG((EFI_D_ERROR, "Hexagon memory write failed\n"));
+  }
+}
+
+#define DISABLE TRUE
+#define ENABLE FALSE
+
+VOID
+ConfigureMpu(BOOLEAN Disable)
+{
+  ArmDisableDataCache ();
+  // Invalidate instruction cache
+  ArmInvalidateInstructionCache ();
+
+  asm(" MRC p15, 0, R1, c1, c0, 0");     //read CP15 register 1
+  if(Disable) {
+    asm(" BIC R1, R1, #0x1"); // Disable MPU
+  }
+  else {
+    asm(" ORR R1, R1, #0x1"); // Enable MPU
+  }
+
+  ArmDataSynchronizationBarrier();
+  asm(" MCR p15, 0, R1, c1, c0, 0");  //write CP15 register 1
+  ArmInstructionSynchronizationBarrier();
+}
+
+void HexagonFunction(
+    IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+{
+  DEBUG((EFI_D_ERROR, "----------Hexagon Test-------------\n"));
+  ConfigureMpu(DISABLE);
+  TestHexagonCopy();
+
+  /* TODO :
+   * Find the sequence to get the Hexagon out of reset (thanks to Jon Pry for mentioning it)
+   * Get some test code to run 
+   *
+   * Current idea : 
+   * (1) Disable MPU (done)
+   * (2) Copy code to hexagon mem
+   * (3) Bring the hexagon out of reset, halt the AP (thanks to minecrell for suggestions)
+   */
+
+  //ConfigureMpu(ENABLE);
+  DEBUG((EFI_D_ERROR, "----------Hexagon Test End-------------\n"));
+}
+
 void EnterBootMgr(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable){
   EFI_STATUS                   Status;
   EFI_BOOT_MANAGER_LOAD_OPTION BootManagerMenu;
@@ -329,7 +398,8 @@ void ReturnToMainMenu(
   MenuOptions[2] = (MenuEntry){3, L"Play Tetris", TRUE, &StartTetris};
   MenuOptions[3] = (MenuEntry){4, L"Reboot Menu", TRUE, &RebootMenu};
   MenuOptions[4] = (MenuEntry){5, L"Exit to Bootmgr", TRUE, &EnterBootMgr},
-  MenuOptions[5] = (MenuEntry){6, L"Exit", TRUE, &ExitMenu};
+  MenuOptions[5] = (MenuEntry){6, L"Test Hexagon", TRUE, &HexagonFunction},
+  MenuOptions[6] = (MenuEntry){7, L"Exit", TRUE, &ExitMenu};
 }
 
 void NullFunction()
