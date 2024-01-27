@@ -304,7 +304,7 @@ STATIC EFI_STATUS usb_init(VOID)
   if (EFI_ERROR(Status)) {
     goto fail_get_interface;
   }
-/*
+
   if (!StrCmp(mUdcDevice.t_usb_if->controller, L"dwc"))
   {
     //initialize udc functions to use dwc controller
@@ -320,7 +320,7 @@ STATIC EFI_STATUS usb_init(VOID)
 
     mUsbIf.udc_request_queue   = usb30_udc_request_queue;
     mUsbIf.max_usb_bulk_size   = MAX_USBSS_BULK_SIZE;
-  }*/
+  }
   else if (!StrCmp(mUdcDevice.t_usb_if->controller, L"ci"))
   {
     /* initialize udc functions to use the default chipidea controller */
@@ -411,7 +411,7 @@ fail_get_interface:
 
 EFI_STATUS
 EFIAPI
-Usb30PeriphStart (
+UsbPeriphStart (
   IN USB_DEVICE_DESCRIPTOR   *DeviceDescriptor,
   IN VOID                   **Descriptors,
   IN USB_DEVICE_EVENT_CALLBACK  EventCallback
@@ -444,7 +444,7 @@ Usb30PeriphStart (
 }
 
 EFI_STATUS
-Usb30PeriphStop (
+UsbPeriphStop (
   VOID
   )
 {
@@ -454,7 +454,7 @@ Usb30PeriphStop (
 
 STATIC
 EFI_STATUS
-Usb30PeriphTransfer (
+UsbPeriphTransfer (
   IN        UINT8  EndpointIndex,
   IN        UINTN  Size,
   IN        VOID  *Buffer
@@ -513,9 +513,9 @@ UsbDeviceFreeTransferBuffer (
 }
 
 STATIC USB_DEVICE_PROTOCOL mUsbDevice = {
-  Usb30PeriphStart,
-  Usb30PeriphStop,
-  Usb30PeriphTransfer,
+  UsbPeriphStart,
+  UsbPeriphStop,
+  UsbPeriphTransfer,
   UsbDeviceAllocateTransferBuffer,
   UsbDeviceFreeTransferBuffer
 };
