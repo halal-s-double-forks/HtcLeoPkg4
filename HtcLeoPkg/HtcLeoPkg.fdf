@@ -121,6 +121,7 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
   # SoC Drivers
+  INF HtcLeoPkg/Drivers/BoardDxe/BoardDxe.inf
   INF HtcLeoPkg/GPLDrivers/ClockDxe/ClockDxe.inf
   INF HtcLeoPkg/Drivers/SmemDxe/SmemDxe.inf
   INF HtcLeoPkg/Drivers/SmemPtableDxe/SmemPtableDxe.inf
@@ -130,6 +131,7 @@ APRIORI DXE {
   INF HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
   INF HtcLeoPkg/GPLDrivers/I2CDxe/I2CDxe.inf
   INF HtcLeoPkg/Drivers/MicroPDxe/MicroPDxe.inf
+  INF HtcLeoPkg/Drivers/UsbDxe/UsbDxe.inf
 
   #
   # Virtual Keyboard

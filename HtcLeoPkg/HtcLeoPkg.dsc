@@ -85,11 +85,17 @@
   HtcLeoVibrationLib|HtcLeoPkg/GPLLibrary/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
 
   # SoC Drivers libraries
+  BoardLib|HtcLeoPkg/Drivers/BoardDxe/BoardImplLib.inf
   StrLib|HtcLeoPkg/Library/StrLib/StrLib.inf
   PTableLib|HtcLeoPkg/Library/PTableLib/PTableLib.inf
   SmemLib|HtcLeoPkg/Drivers/SmemDxe/SmemImplLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
+  MallocLib|HtcLeoPkg/Library/MallocLib/MallocLib.inf
+  LcmLib|HtcLeoPkg/Library/LcmLib/LcmLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
+  QcomUsbPhyLib|HtcLeoPkg/Library/QcomUsbPhyLib/QcomUsbPhyLib.inf
+  QcomPlatformUsbLib|HtcLeoPkg/Library/QcomPlatformUsbLib/QcomPlatformUsbLib.inf
+  QcomTargetBoardLib|HtcLeoPkg/Library/QcomTargetBoardLib/QcomTargetBoardLib.inf
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
@@ -225,6 +231,7 @@
   MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
 
   # SoC Drivers
+  HtcLeoPkg/Drivers/BoardDxe/BoardDxe.inf
   HtcLeoPkg/GPLDrivers/ClockDxe/ClockDxe.inf
   HtcLeoPkg/Drivers/SmemDxe/SmemDxe.inf
   HtcLeoPkg/Drivers/SmemPtableDxe/SmemPtableDxe.inf
@@ -234,6 +241,7 @@
   HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
   HtcLeoPkg/GPLDrivers/I2CDxe/I2CDxe.inf
   HtcLeoPkg/Drivers/MicroPDxe/MicroPDxe.inf
+  HtcLeoPkg/Drivers/UsbDxe/UsbDxe.inf
 
   #
   # Virtual Keyboard
