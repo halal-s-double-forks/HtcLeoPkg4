@@ -26,7 +26,7 @@
   StrLib
   BoardLib
   # InterruptsLib
-  PlatformIdLib
+  # PlatformIdLib TBD
   QcomPlatformUsbLib
   TimerLib
   CacheMaintenanceLib
@@ -45,9 +45,9 @@
   HtcLeoPkg/HtcLeoPkg.dec
 
 [Pcd]
-  gQcomTokenSpaceGuid.PcdUsb30Ee1Irq
-  gQcomTokenSpaceGuid.PcdUsb30Base
-  gQcomTokenSpaceGuid.PcdUsb30ScratchBase
+  #gQcomTokenSpaceGuid.PcdUsb30Ee1Irq
+  #gQcomTokenSpaceGuid.PcdUsb30Base
+  #gQcomTokenSpaceGuid.PcdUsb30ScratchBase
   gQcomTokenSpaceGuid.PcdUsbHsBase
   gQcomTokenSpaceGuid.PcdUsbHsIrq
 

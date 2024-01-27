@@ -13,8 +13,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   ArmPkg/ArmPkg.dec
-  EFIDroidPkg/EFIDroidPkg.dec
-  EFIDroidPkg/Qcom/Qcom.dec
+  HtcLeoPkg/HtcLeoPkg.dec
 
 [LibraryClasses]
   UefiBootServicesTableLib
