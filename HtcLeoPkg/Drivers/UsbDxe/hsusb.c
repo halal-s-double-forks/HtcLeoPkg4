@@ -890,15 +890,15 @@ int udc_start(void)
 	writel(STS_URI | STS_SLI | STS_UI | STS_PCI, USB_USBINTR);
 	unmask_interrupt(INT_USB_HS);*/
 
-	gInterrupt->RegisterInterruptSource(gInterrupt, INT_GPIO_GROUP1, UdcInterrupt);
+	gInterrupt->RegisterInterruptSource(gInterrupt, INT_USB_HS, UdcInterrupt);
   	//ASSERT_EFI_ERROR (Status);
 
-	gInterrupt->DisableInterruptSource(gInterrupt, INT_GPIO_GROUP1);
+	gInterrupt->DisableInterruptSource(gInterrupt, INT_USB_HS);
   	//ASSERT_EFI_ERROR (Status);
 
 	writel(STS_URI | STS_SLI | STS_UI | STS_PCI, USB_USBINTR);
 
-	gInterrupt->EnableInterruptSource(gInterrupt, INT_GPIO_GROUP1);
+	gInterrupt->EnableInterruptSource(gInterrupt, INT_USB_HS);
   	//ASSERT_EFI_ERROR (Status);
 
 	/* go to RUN mode (D+ pullup enable) */
