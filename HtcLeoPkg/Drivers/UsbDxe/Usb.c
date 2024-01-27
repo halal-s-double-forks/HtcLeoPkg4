@@ -39,7 +39,7 @@
 #include <IndustryStandard/Usb.h>
 #include <Protocol/EFIDroidUsbDevice.h>
 
-#include <usb30_udc.h>
+//#include <usb30_udc.h>
 #include <hsusb.h>
 
 #define MAX_USBFS_BULK_SIZE (16 * 1024)
@@ -304,10 +304,10 @@ STATIC EFI_STATUS usb_init(VOID)
   if (EFI_ERROR(Status)) {
     goto fail_get_interface;
   }
-
+/*
   if (!StrCmp(mUdcDevice.t_usb_if->controller, L"dwc"))
   {
-    /* initialize udc functions to use dwc controller */
+    //initialize udc functions to use dwc controller
     mUsbIf.udc_init            = usb30_udc_init;
     mUsbIf.udc_register_gadget = usb30_udc_register_gadget;
     mUsbIf.udc_start           = usb30_udc_start;
@@ -320,7 +320,7 @@ STATIC EFI_STATUS usb_init(VOID)
 
     mUsbIf.udc_request_queue   = usb30_udc_request_queue;
     mUsbIf.max_usb_bulk_size   = MAX_USBSS_BULK_SIZE;
-  }
+  }*/
   else if (!StrCmp(mUdcDevice.t_usb_if->controller, L"ci"))
   {
     /* initialize udc functions to use the default chipidea controller */

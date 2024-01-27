@@ -46,7 +46,7 @@ struct udc_endpoint;
 
 struct udc_request *udc_request_alloc(void);
 void udc_request_free(struct udc_request *req);
-int udc_request_queue(struct udc_endpoint *ept, struct udc_request *req);
+int udc_request_queue(struct udc_endpoint *ept, struct udc_request *_req);
 int udc_request_cancel(struct udc_endpoint *ept, struct udc_request *req);
 
 #define UDC_TYPE_BULK_IN	1

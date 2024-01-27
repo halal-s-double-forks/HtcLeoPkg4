@@ -1,7 +1,7 @@
 #include <Base.h>
 #include <Library/LKEnvLib.h>
 #include <Chipset/board.h>
-//#include <Chipset/baseband.h>
+#include <Chipset/baseband.h>
 #include <Chipset/smem.h>
 #include <Library/QcomTargetBoardLib.h>
 

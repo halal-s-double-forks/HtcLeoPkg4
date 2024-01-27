@@ -76,4 +76,5 @@ void qusb2_phy_reset(void)
 	writel(0x22, QUSB2PHY_PORT_POWERDOWN);
 #else
 	pcom_usb_reset_phy();
+#endif
 }

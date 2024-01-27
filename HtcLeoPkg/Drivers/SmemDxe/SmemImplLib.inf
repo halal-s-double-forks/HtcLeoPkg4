@@ -16,6 +16,19 @@
   ArmPkg/ArmPkg.dec
   HtcLeoPkg/HtcLeoPkg.dec
 
+[Packages]
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
+
+[LibraryClasses]
+  ArmLib
+  BaseLib
+  UefiBootServicesTableLib
+  IoLib
+  CompilerIntrinsicsLib
+  CacheMaintenanceLib
+
 [Pcd.common]
   gQcomTokenSpaceGuid.PcdMsmSharedBase
   gQcomTokenSpaceGuid.PcdSmemTargetInfoAddress
