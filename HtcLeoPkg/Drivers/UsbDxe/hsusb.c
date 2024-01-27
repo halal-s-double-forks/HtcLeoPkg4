@@ -38,6 +38,11 @@
 #include <udc.h>
 #include <hsusb.h>
 
+#include <Protocol/HardwareInterrupt.h>
+
+// Cached copy of the Hardware Interrupt protocol instance
+EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
+
 //#define DEBUG_USB
 
 #define MAX_TD_XFER_SIZE  (16 * 1024)
@@ -727,7 +732,9 @@ int udc_init(struct udc_device *dev)
 	return 0;
 }
 
-enum handler_return udc_interrupt(void *arg)
+//enum handler_return udc_interrupt(void *arg)
+VOID
+udc_interrupt(void *arg)
 {
 	struct udc_endpoint *ept;
 	unsigned ret = INT_NO_RESCHEDULE;
@@ -808,7 +815,7 @@ enum handler_return udc_interrupt(void *arg)
 			}
 		}
 	}
-	return ret;
+	//return ret;
 }
 
 int udc_register_gadget(struct udc_gadget *gadget)
@@ -830,6 +837,10 @@ int udc_start(void)
 	uint32_t val;
 
 	dprintf(ALWAYS, "udc_start()\n");
+
+	// Find the interrupt controller protocol.  ASSERT if not found.
+  	Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
+  	ASSERT_EFI_ERROR (Status);
 
 	if (!the_device) {
 		dprintf(CRITICAL, "udc cannot start before init\n");
@@ -870,9 +881,20 @@ int udc_start(void)
 
 	udc_descriptor_register(desc);
 
-	register_int_handler(INT_USB_HS, udc_interrupt, (void *)0);
+	/*register_int_handler(INT_USB_HS, udc_interrupt, (void *)0);
 	writel(STS_URI | STS_SLI | STS_UI | STS_PCI, USB_USBINTR);
-	unmask_interrupt(INT_USB_HS);
+	unmask_interrupt(INT_USB_HS);*/
+	
+	Status = gInterrupt->RegisterInterruptSource(gInterrupt, INT_GPIO_GROUP1, MsmGpioIsr);
+  	ASSERT_EFI_ERROR (Status);
+
+	Status = gInterrupt->DisableInterruptSource(gInterrupt, INT_GPIO_GROUP1);
+  	ASSERT_EFI_ERROR (Status);
+
+	writel(STS_URI | STS_SLI | STS_UI | STS_PCI, USB_USBINTR);
+
+	Status = gInterrupt->EnableInterruptSource(gInterrupt, INT_GPIO_GROUP1);
+  	ASSERT_EFI_ERROR (Status);
 
 	/* go to RUN mode (D+ pullup enable) */
 	val = readl(USB_USBCMD);
