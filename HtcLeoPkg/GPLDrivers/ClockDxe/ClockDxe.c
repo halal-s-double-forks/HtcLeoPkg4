@@ -26,6 +26,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/pcom.h>
+#include <Library/acpuclock.h>
 
 #include <Chipset/iomap.h>
 #include <Chipset/clock.h>
@@ -267,6 +268,12 @@ ClkDisable(UINTN Id)
 	}
 }
 
+int msm_pll_request(unsigned id, unsigned on)
+{
+	on = !!on;
+	return msm_proc_comm(PCOM_CLKCTL_RPC_PLL_REQUEST, &id, &on);
+}
+
 static int ClocksOn[] = {
 	SDC1_CLK,
 	SDC2_CLK,
@@ -289,6 +296,7 @@ MsmClockInit(VOID)
 EMBEDDED_CLOCK_PROTOCOL  gClock = {
   ClkEnable,
   ClkDisable,
+  ClkSetRate,
 };
 
 EFI_STATUS
@@ -302,7 +310,7 @@ ClockDxeInitialize(
   	EFI_HANDLE       Handle;
 	
 	//
-	// Make sure the Gpio protocol has not been installed in the system yet.
+	// Make sure the clock protocol has not been installed in the system yet.
 	//
 	ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gEmbeddedClockProtocolGuid);
 
@@ -323,6 +331,9 @@ ClockDxeInitialize(
 		if (EFI_ERROR (Status)) {
 			Status = EFI_OUT_OF_RESOURCES;
 		}
+
+		// Setup Scorpion PLL
+		msm_acpu_clock_init(11+6);
 		return EFI_SUCCESS;
 	}
 	else {

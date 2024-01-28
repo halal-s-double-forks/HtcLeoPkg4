@@ -21,8 +21,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#define FUNCTION(x) .global x; x:
-
 #define DSB .byte 0x4f, 0xf0, 0x7f, 0xf5
 #define ISB .byte 0x6f, 0xf0, 0x7f, 0xf5
 #define WSPL_VADDR 0x80000000
@@ -88,11 +86,11 @@ reset:
 	MCR 	p15, 0, r0, c1, c0, 1
 	
 	// Invalidate the UTLB
-	MOV r0, #0
-	MCR p15, 0, r0, c8, c7, 0
+	MOV 	r0, #0
+	MCR 	p15, 0, r0, c8, c7, 0
 
 	// Clean and invalidate cache - Ensure pipeline flush
-	MOV R0, #0
+	MOV 	R0, #0
 	DSB
 	ISB
 .ltorg

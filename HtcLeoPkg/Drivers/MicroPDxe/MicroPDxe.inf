@@ -17,11 +17,7 @@
   FILE_GUID                      = 4e766dcb-a2a5-4d2b-8364-c2ef8f99b0cc
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
-
   ENTRY_POINT                    = MicroPDxeInitialize
-
-[BuildOptions.ARM]
-  GCC:*_*_*_CC_FLAGS = -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-missing-braces
 
 [Sources.common]
   MicroPDxe.c
@@ -45,18 +41,17 @@
   BaseLib
   DebugLib
   UefiBootServicesTableLib
-  MsmI2CLib
   TimerLib
   
 [Guids]
 
 [Protocols]
-  gEfiBlockIoProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
+  gHtcLeoMicropProtocolGuid
+  gHtcLeoI2CProtocolGuid
 
 [Pcd]
 
-
-[depex]
- TRUE
+[Depex]
+  gHtcLeoI2CProtocolGuid

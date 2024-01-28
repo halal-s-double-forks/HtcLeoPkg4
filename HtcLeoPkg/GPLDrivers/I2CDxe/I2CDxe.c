@@ -1,4 +1,4 @@
-/* msm-i2c.c
+/* Port of msm-i2c.c to UEFI
  *
  * LK port: Copyright (C) 2011 Alexander Tarasikov <alexander.tarasikov@gmail.com>
  * Copyright (C) 2007 Google, Inc.
@@ -23,10 +23,8 @@
 
 #include <Library/pcom.h>
 #include <Library/gpio.h>
-#include <Library/InterruptsLib.h>
 #include <Library/LKEnvLib.h>
 #include <Library/reg.h>
-//#include <Library/MsmI2cLib.h>
 #include <Device/Gpio.h>
 
 #include <Chipset/msm_i2c.h>
@@ -36,11 +34,17 @@
 
 #include <Protocol/HardwareInterrupt.h>
 #include <Protocol/EmbeddedClock.h>
+#include <Protocol/HtcLeoI2C.h>
 
 #include <Chipset/gpio.h>
 #include <Chipset/irqs.h>
+#include <Protocol/GpioTlmm.h>
 
+// Cached copy of the Hardware Gpio protocol instance
+TLMM_GPIO *gGpio = NULL;
+// Cached copy of the Embedded Clock protocol instance
 EMBEDDED_CLOCK_PROTOCOL  *gClock = NULL;
+// Cached copy of the Hardware Interrupt protocol instance
 EFI_HARDWARE_INTERRUPT_PROTOCOL *gInterrupt = NULL;
 
 #define DEBUG_I2C 0
@@ -244,6 +248,16 @@ out_err:
 	timeout = ERR_TIMED_OUT;
 }
 
+VOID
+EFIAPI
+I2CInterruptHandler (
+  IN  HARDWARE_INTERRUPT_SOURCE   Source,
+  IN  EFI_SYSTEM_CONTEXT          SystemContext
+  )
+{
+	msm_i2c_interrupt_locked();
+}
+
 static int msm_i2c_poll_notbusy(int warn)
 {
 	uint32_t retries = 0;
@@ -253,8 +267,8 @@ static int msm_i2c_poll_notbusy(int warn)
 		if (!(status & I2C_STATUS_BUS_ACTIVE)) {
 			if (retries && warn){
 				I2C_DBG(DEBUGLEVEL, "Warning bus was busy (%d)\n", retries);
-				return 0;
 			}
+			return 0;
 		}
 		
 		if (retries++ > 100)
@@ -288,29 +302,29 @@ static int msm_i2c_recover_bus_busy(void)
 		writel(I2C_WRITE_DATA_LAST_BYTE | 0xff, dev.pdata->i2c_base + I2C_WRITE_DATA);
 	}
 
-	I2C_DBG(DEBUGLEVEL, "i2c_scl: %d, i2c_sda: %d\n", gpio_get(dev.pdata->scl_gpio), gpio_get(dev.pdata->sda_gpio));
+	I2C_DBG(DEBUGLEVEL, "i2c_scl: %d, i2c_sda: %d\n", gGpio->Get(dev.pdata->scl_gpio), gGpio->Get(dev.pdata->sda_gpio));
 
 	for (i = 0; i < 9; i++) {
-		if (gpio_get(dev.pdata->sda_gpio) && gpio_clk_status)
+		if (gGpio->Get(dev.pdata->sda_gpio) && gpio_clk_status)
 			break;
 			
-		gpio_set(dev.pdata->scl_gpio, 0);
+		gGpio->Set(dev.pdata->scl_gpio, 0);
 		NanoSecondDelay(5);
 		
-		gpio_set(dev.pdata->sda_gpio, 0);
+		gGpio->Set(dev.pdata->sda_gpio, 0);
 		NanoSecondDelay(5);
 		
-		gpio_config(dev.pdata->scl_gpio, GPIO_INPUT);
+		gGpio->Config(dev.pdata->scl_gpio, GPIO_INPUT);
 		NanoSecondDelay(5);
 		
-		if (!gpio_get(dev.pdata->scl_gpio))
+		if (!gGpio->Get(dev.pdata->scl_gpio))
 			NanoSecondDelay(20);
 			
-		if (!gpio_get(dev.pdata->scl_gpio))
+		if (!gGpio->Get(dev.pdata->scl_gpio))
 			MicroSecondDelay(10);
 			
-		gpio_clk_status = gpio_get(dev.pdata->scl_gpio);
-		gpio_config(dev.pdata->sda_gpio, GPIO_INPUT);
+		gpio_clk_status = gGpio->Get(dev.pdata->scl_gpio);
+		gGpio->Config(dev.pdata->sda_gpio, GPIO_INPUT);
 		NanoSecondDelay(5);
 	}
 	
@@ -408,7 +422,7 @@ err:
 }
 
 //struct mutex msm_i2c_rw_mutex;
-int msm_i2c_write(int chip, void *buf, size_t count)
+int msm_i2c_write(int chip, void *buf, UINTN count)
 {
 	int rc = ERR_NOT_READY;
 	if (!dev.pdata) {
@@ -433,7 +447,7 @@ int msm_i2c_write(int chip, void *buf, size_t count)
 	return rc;
 }
 
-int msm_i2c_read(int chip, uint8_t reg, void *buf, size_t count)
+int msm_i2c_read(int chip, UINT8 reg, void *buf, UINTN count)
 {
 	int rc = ERR_NOT_READY;
 	if (!dev.pdata) {
@@ -489,7 +503,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 
 	gClock->ClkDisable(dev.pdata->clk_nr);
-	gInterrupt->RegisterInterruptSource(gInterrupt, dev.pdata->irq_nr, msm_i2c_interrupt_locked);
+	gInterrupt->RegisterInterruptSource(gInterrupt, dev.pdata->irq_nr, I2CInterruptHandler);
 
 	return 0;
 }
@@ -527,22 +541,40 @@ static struct msm_i2c_pdata i2c_pdata = {
 	.i2c_base = (void*)MSM_I2C_BASE,
 };
 
-RETURN_STATUS
+HTCLEO_I2C_PROTOCOL gHtcLeoI2CProtocol = {
+  msm_i2c_write,
+  msm_i2c_read,
+  msm_i2c_xfer
+};
+
+EFI_STATUS
 EFIAPI
-MsmI2cInitialize(VOID)
+I2CDxeInitialize(
+	IN EFI_HANDLE         ImageHandle,
+	IN EFI_SYSTEM_TABLE   *SystemTable
+)
 {
-  EFI_STATUS Status = EFI_SUCCESS;
+	EFI_STATUS  Status = EFI_SUCCESS;
+	EFI_HANDLE Handle = NULL;
 
-  // Find the interrupt controller protocol.  ASSERT if not found.
-  Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
-  ASSERT_EFI_ERROR (Status);
+	// Find the interrupt controller protocol.  ASSERT if not found.
+  	Status = gBS->LocateProtocol (&gHardwareInterruptProtocolGuid, NULL, (VOID **)&gInterrupt);
+  	ASSERT_EFI_ERROR (Status);
 
-  // Find the clock controller protocol.  ASSERT if not found.
-  Status = gBS->LocateProtocol (&gEmbeddedClockProtocolGuid, NULL, (VOID **)&gClock);
-  ASSERT_EFI_ERROR (Status);
+  	// Find the clock controller protocol.  ASSERT if not found.
+  	Status = gBS->LocateProtocol (&gEmbeddedClockProtocolGuid, NULL, (VOID **)&gClock);
+  	ASSERT_EFI_ERROR (Status);
 
-  msm_i2c_probe(&i2c_pdata);
+	// Find the gpio controller protocol.  ASSERT if not found.
+    Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
+    ASSERT_EFI_ERROR (Status);
 
-  return Status;
+  	msm_i2c_probe(&i2c_pdata);
+
+	// Install the i2c protocol onto a new handle
+	Status = gBS->InstallMultipleProtocolInterfaces(
+	&Handle, &gHtcLeoI2CProtocolGuid, &gHtcLeoI2CProtocol, NULL);
+	ASSERT_EFI_ERROR(Status);
+
+	return Status;
 }
-	

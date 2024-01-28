@@ -13,17 +13,14 @@
 
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = HeartbeatDxe
-  FILE_GUID                      = 2eb1f444-46f1-4948-8e46-2c05c2735df9
+  BASE_NAME                      = I2CDxe
+  FILE_GUID                      = 4e766dcb-a2a5-4d2b-8364-c2ef8f99b0cd
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = I2CDxeInitialize
 
-  ENTRY_POINT                    = HeartbeatDxeInitialize
-
-[BuildOptions.ARM]
-  GCC:*_*_*_CC_FLAGS = -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-missing-braces
 [Sources.common]
-  HeartbeatDxe.c
+  I2CDxe.c
 
 [Packages]
   ArmPkg/ArmPkg.dec
@@ -44,18 +41,21 @@
   BaseLib
   DebugLib
   UefiBootServicesTableLib
-  MsmTargetGpioLib
   TimerLib
-
+  MsmPcomLib
+  
 [Guids]
 
 [Protocols]
-  gEfiBlockIoProtocolGuid
+  gHardwareInterruptProtocolGuid
+  gEmbeddedClockProtocolGuid
   gEfiCpuArchProtocolGuid
   gEfiDevicePathProtocolGuid
+  gHtcLeoI2CProtocolGuid
+  gTlmmGpioProtocolGuid
 
 [Pcd]
 
+[Depex]
+  gTlmmGpioProtocolGuid
 
-[depex]
- TRUE

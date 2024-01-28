@@ -1,0 +1,2 @@
+Based on the lk driver :
+ * https://github.com/n0d3/lk/blob/BlackCLK_ex_2/platform/msm_shared/msm_i2c.c

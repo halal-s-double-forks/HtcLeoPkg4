@@ -34,6 +34,7 @@
   EmbeddedPkg/EmbeddedPkg.dec
   ArmPkg/ArmPkg.dec
   ArmPlatformPkg/ArmPlatformPkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -97,6 +98,11 @@
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiBootServicesData
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiLoaderCode
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiLoaderData
+
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferPixelBpp
 
 [Pcd]
   gArmTokenSpaceGuid.PcdSystemMemoryBase

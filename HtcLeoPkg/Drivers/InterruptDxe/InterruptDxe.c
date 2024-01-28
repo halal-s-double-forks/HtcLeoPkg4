@@ -22,7 +22,6 @@
 #include <Library/PcdLib.h>
 #include <Library/IoLib.h>
 #include <Library/ArmLib.h>
-#include <Library/InterruptsLib.h>
 
 #include <Protocol/Cpu.h>
 #include <Protocol/HardwareInterrupt.h>
@@ -129,7 +128,7 @@ EnableInterruptSource (
     return EFI_UNSUPPORTED;
   }
   
-  /* Called by unmask_interrupt() */
+  /* unmask interrupt */
   unsigned reg = (Source > 31) ? VIC_INT_ENSET1 : VIC_INT_ENSET0;
 	unsigned bit = 1 << (Source & 31);
 	MmioWrite32(reg, bit);
@@ -160,7 +159,7 @@ DisableInterruptSource (
     return EFI_UNSUPPORTED;
   }
 
-  /* Called by mask_interrupt() */
+  /* mask_interrupt */
   unsigned reg = (Source > 31) ? VIC_INT_ENCLEAR1 : VIC_INT_ENCLEAR0;
 	unsigned bit = 1 << (Source & 31);
 	MmioWrite32(reg, bit);

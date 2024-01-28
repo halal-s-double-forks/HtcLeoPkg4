@@ -189,12 +189,38 @@ enum gpio_irq_trigger {
 
 #define NR_MSM_GPIOS 164
 
-void msm_gpio_config(unsigned config, unsigned disable);
 void msm_gpio_set_owner(unsigned gpio, unsigned owner);
 void msm_gpio_init(void);
 void msm_gpio_deinit(void);
 
 /* Specific gpios definitions */
 #define HTCLEO_GPIO_SD_STATUS 153
+
+/* Definitions moved from the driver */
+struct gpioregs_t {
+	unsigned out;
+	unsigned in;
+	unsigned int_status;
+	unsigned int_clear;
+	unsigned int_en;
+	unsigned int_edge;
+	unsigned int_pos;
+	unsigned oe;
+	unsigned owner;
+	unsigned start;
+	unsigned end;
+};
+
+typedef struct gpioregs_t gpioregs;
+
+/*
+ * IRQ -> GPIO mapping table
+
+static signed char irq2gpio[32] = {
+	-1, -1, -1, -1, -1, -1,  0,  1,
+	-1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1,  2,  3,  4,  5,  6,
+	 7,  8,  9, 10, 11, 12, -1, -1,
+};*/
 
 #endif	//__PLATFORM_QSD8K_GPIO_HW_H

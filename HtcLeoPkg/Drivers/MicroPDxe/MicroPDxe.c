@@ -17,6 +17,11 @@
 #include <Chipset/timer.h>
 
 #include <Device/microp.h>
+#include <Protocol/HtcLeoMicroP.h>
+#include <Protocol/HtcLeoI2C.h>
+
+// Cached copy of the i2c protocol
+HTCLEO_I2C_PROTOCOL *gI2C = NULL;
 
 /* global vars */
 int msm_microp_i2c_status = 0;
@@ -26,7 +31,6 @@ static struct microp_platform_data microp_pdata = {
 };
 
 static struct microp_platform_data *pdata = NULL;
-int msm_microp_i2c_status;
 
 int microp_i2c_read(uint8_t addr, uint8_t *data, int length)
 {
@@ -40,7 +44,7 @@ int microp_i2c_read(uint8_t addr, uint8_t *data, int length)
 	
 	int retry;
 	for (retry = 0; retry <= MSM_I2C_READ_RETRY_TIMES; retry++) {
-		if (msm_i2c_xfer(msgs, 2) == 2)
+		if (gI2C->Xfer(msgs, 2) == 2)
 			break;
 		MicroSecondDelay(5);
 	}
@@ -69,7 +73,7 @@ int microp_i2c_write(uint8_t addr, uint8_t *cmd, int length)
 	
 	int retry;
 	for (retry = 0; retry <= MSM_I2C_WRITE_RETRY_TIMES; retry++) {
-		if (msm_i2c_xfer(msg, 1) == 1)
+		if (gI2C->Xfer(msg, 1) == 1)
 			break;
 		MicroSecondDelay(5);
 	}
@@ -292,7 +296,7 @@ static void microp_i2c_intr_work_func(struct work_struct *work)
 
 	enable_irq(client->irq);
 }
-*/
+
 
 static int microp_function_initialize(void)
 {    
@@ -310,7 +314,7 @@ static int microp_function_initialize(void)
 
 err_irq_en:
 	return ret;
-}
+}*/
 
 void microp_i2c_probe(struct microp_platform_data *kpdata)
 {
@@ -360,6 +364,11 @@ void htcleo_led_set_mode(uint8_t mode)
 	microp_i2c_write(MICROP_I2C_WCMD_LED_CTRL, data, 2);
 }
 
+HTCLEO_MICROP_PROTOCOL gHtcLeoMicropProtocol = {
+  microp_i2c_write,
+  microp_i2c_read
+};
+
 EFI_STATUS
 EFIAPI
 MicroPDxeInitialize(
@@ -368,14 +377,20 @@ MicroPDxeInitialize(
 )
 {
 	EFI_STATUS  Status = EFI_SUCCESS;
+	EFI_HANDLE Handle = NULL;
 
-	// Probe I2C first
-	Status = MsmI2cInitialize();
-  	ASSERT_EFI_ERROR(Status);
+	// Find the i2c protocol.  ASSERT if not found.
+  	Status = gBS->LocateProtocol (&gHtcLeoI2CProtocolGuid, NULL, (VOID **)&gI2C);
+  	ASSERT_EFI_ERROR (Status);
 
 	microp_i2c_probe(&microp_pdata);
 
-    // Turn led green as a test
-    htcleo_led_set_mode(1);
+	if (msm_microp_i2c_status) 
+	{
+		Status = gBS->InstallMultipleProtocolInterfaces(
+		&Handle, &gHtcLeoMicropProtocolGuid, &gHtcLeoMicropProtocol, NULL);
+		ASSERT_EFI_ERROR(Status);
+	}
+
 	return Status;
 }
