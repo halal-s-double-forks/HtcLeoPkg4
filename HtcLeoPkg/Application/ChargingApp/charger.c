@@ -192,9 +192,15 @@ ChargingDxeInit(
 {
   EFI_STATUS Status = EFI_SUCCESS;
 
+  DEBUG((EFI_D_ERROR, "ChargingApp: Init()"));
+
   // Find the gpio controller protocol.  ASSERT if not found.
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
   ASSERT_EFI_ERROR (Status);
+
+  do {
+    WantsCharging(NULL, NULL);
+  }while(1);
 
   // Install a timer to check for want charging every 3 seconds
   Status = gBS->CreateEvent(

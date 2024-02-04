@@ -195,7 +195,8 @@ APRIORI DXE {
   #
   # UEFI applications
   #
-  INF ShellPkg/Application/Shell/Shell.inf
+  INF HtcLeoPkg/Application/ChargingApp/charger.inf
+  #INF ShellPkg/Application/Shell/Shell.inf
 !ifdef $(INCLUDE_TFTP_COMMAND)
   INF ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf
 !endif #$(INCLUDE_TFTP_COMMAND)
