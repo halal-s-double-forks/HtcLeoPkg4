@@ -131,7 +131,7 @@ VOID EFIAPI WantsCharging(
     DEBUG((EFI_D_ERROR, "Battery Volatage is: %d\n", voltage));
 
     if(voltage < default_chg_voltage_threshold[1]) {
-      DEBUG((EFI_D_ERROR, "Voltage < default_threshold"));
+      DEBUG((EFI_D_ERROR, "Voltage < default_threshold\n"));
       /*
       // If battery needs charging, set new charger state
       if (htcleo_ac_online()) {
@@ -151,7 +151,7 @@ VOID EFIAPI WantsCharging(
     }
     else {
       // Battery is full
-      DEBUG((EFI_D_ERROR, "Voltage >= default_threshold"));
+      DEBUG((EFI_D_ERROR, "Voltage >= default_threshold\n"));
       // Set charger state to CHG_OFF_FULL_BAT
       /*if (htcleo_charger_state() != CHG_OFF_FULL_BAT ) {
         writel(0x00080001, USB_USBCMD);
@@ -162,7 +162,7 @@ VOID EFIAPI WantsCharging(
     }
   }
   else {
-    DEBUG((EFI_D_ERROR, "USB not connected!"));
+    DEBUG((EFI_D_ERROR, "USB not connected!\n"));
     // Set charger state to CHG_OFF
     /*if (htcleo_charger_state() != CHG_OFF ) {
       writel(0x00080001, USB_USBCMD);
@@ -192,7 +192,7 @@ ChargingDxeInit(
 {
   EFI_STATUS Status = EFI_SUCCESS;
 
-  DEBUG((EFI_D_ERROR, "ChargingApp: Init()"));
+  DEBUG((EFI_D_ERROR, "ChargingApp: Init()\n"));
 
   // Find the gpio controller protocol.  ASSERT if not found.
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
