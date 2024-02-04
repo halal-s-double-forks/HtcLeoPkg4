@@ -21,21 +21,27 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Library/IoLib.h>
+#include <Library/TimerLib.h>
 
 #include <Chipset/iomap.h>
 #include <Chipset/irqs.h>
 #include <Chipset/timer.h>
 #include <Library/gpio.h>
 #include <Library/DS2746.h>
+#include <Library/hsusb.h>
 
 #include <Device/Gpio.h>
 
 #include <Protocol/GpioTlmm.h>
 
-// USB
-#define B_SESSION_VALID   (1 << 11)
-#define USB_OTGSC         (MSM_USB_BASE + 0x01A4)
 #define USB_STATUS        0xef20c
+
+#define VOLTAGE_3700 0
+#define VOLTAGE_3800 1
+#define VOLTAGE_3900 2
+#define VOLTAGE_4000 3
+#define VOLTAGE_4100 4
+#define VOLTAGE_4200 5
 
 EFI_EVENT m_CallbackTimer = NULL;
 EFI_EVENT EfiExitBootServicesEvent      = (EFI_EVENT)NULL;
@@ -51,11 +57,27 @@ enum PSY_CHARGER_STATE {
 	CHG_OFF_FULL_BAT,
 };
 
+enum PSY_CHARGER_STATE gState = CHG_OFF;
+
+// HACK
+void ulpi_write(unsigned val, unsigned reg)
+{
+	unsigned timeout = 10000;
+	
+	/* initiate write operation */
+	MmioWrite32(USB_ULPI_VIEWPORT, ULPI_RUN | ULPI_WRITE | ULPI_ADDR(reg) | ULPI_DATA(val));
+
+	/* wait for completion */
+	while ((MmioRead32(USB_ULPI_VIEWPORT) & ULPI_RUN) && (--timeout));
+}
+// END
+
 //toDo
 //be able to get battery voltage
 //enable charging, use LED as indicator
 static void EFIAPI SetCharger(enum PSY_CHARGER_STATE state)
 {
+  gState = state;
 	switch (state) {
 		case CHG_USB_LOW:
 			gGpio->Set(HTCLEO_GPIO_BATTERY_CHARGER_ENABLE, 0);
@@ -81,12 +103,6 @@ static void EFIAPI SetCharger(enum PSY_CHARGER_STATE state)
 			gGpio->Config(HTCLEO_GPIO_POWER_USB, GPIO_OUTPUT);*/
 			break;
 	}
-}
-
-BOOLEAN  
-CheckUsbStatus()
-{
-  return !!MmioRead32(MSM_SHARED_BASE + USB_STATUS);
 }
 
 /*
@@ -118,6 +134,18 @@ static UINT32 default_chg_voltage_threshold[] =
 	4200,//DS2746_HIGH_VOLTAGE
 };
 
+BOOLEAN  
+CheckUsbStatus()
+{
+  return !!MmioRead32(MSM_SHARED_BASE + USB_STATUS);
+}
+
+BOOLEAN
+IsAcOnline() 
+{
+	return !!((MmioRead32(USB_PORTSC) & PORTSC_LS) == PORTSC_LS);
+}
+
 VOID EFIAPI WantsCharging(
     IN EFI_EVENT Event, 
     IN VOID *Context)
@@ -128,47 +156,47 @@ VOID EFIAPI WantsCharging(
   
   if (usbStatus){ //todo add battery percentage check somelike battery < 80 % && usbStatus should ensure we wont overcharge
     voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
-    DEBUG((EFI_D_ERROR, "Battery Volatage is: %d\n", voltage));
+    DEBUG((EFI_D_ERROR, "Battery Voltage is: %d\n", voltage));
 
-    if(voltage < default_chg_voltage_threshold[1]) {
+    if(voltage < default_chg_voltage_threshold[VOLTAGE_4000]) {
       DEBUG((EFI_D_ERROR, "Voltage < default_threshold\n"));
-      /*
       // If battery needs charging, set new charger state
-      if (htcleo_ac_online()) {
-        if (htcleo_charger_state() != CHG_AC ) {
-          writel(0x00080000, USB_USBCMD);
+      if (IsAcOnline()) {
+        if (gState != CHG_AC ) {
+          MmioWrite32(USB_USBCMD, 0x00080000);
           ulpi_write(0x48, 0x04);
-          htcleo_set_charger(CHG_AC);
+          SetCharger(CHG_AC);
         }
       } else {
-        if (htcleo_charger_state() != CHG_USB_LOW ) {
-          writel(0x00080001, USB_USBCMD);
-          mdelay(10);
-          htcleo_set_charger(CHG_USB_LOW);
+        if (gState != CHG_USB_LOW ) {
+          MmioWrite32(USB_USBCMD, 0x00080001);
+          MicroSecondDelay(10);
+          SetCharger(CHG_USB_LOW);
         }
       }
-      */
+      DEBUG((EFI_D_ERROR, "Charging enabled\n"));
+      // and turn on leds
     }
     else {
       // Battery is full
       DEBUG((EFI_D_ERROR, "Voltage >= default_threshold\n"));
       // Set charger state to CHG_OFF_FULL_BAT
-      /*if (htcleo_charger_state() != CHG_OFF_FULL_BAT ) {
-        writel(0x00080001, USB_USBCMD);
-        mdelay(10);
-        htcleo_set_charger(CHG_OFF_FULL_BAT);
-      }*/
+      if (gState != CHG_OFF_FULL_BAT ) {
+        MmioWrite32(USB_USBCMD, 0x00080001);
+        MicroSecondDelay(10);
+        SetCharger(CHG_OFF_FULL_BAT);
+      }
       // and turn off led
     }
   }
   else {
     DEBUG((EFI_D_ERROR, "USB not connected!\n"));
     // Set charger state to CHG_OFF
-    /*if (htcleo_charger_state() != CHG_OFF ) {
-      writel(0x00080001, USB_USBCMD);
-      mdelay(10);
+    if (gState != CHG_OFF ) {
+      MmioWrite32(USB_USBCMD, 0x00080001);
+      MicroSecondDelay(10);
       SetCharger(CHG_OFF);
-    }*/
+    }
     // and turn off led
   }
 }
@@ -198,6 +226,7 @@ ChargingDxeInit(
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
   ASSERT_EFI_ERROR (Status);
 
+  // HACK : Loop for testing
   do {
     WantsCharging(NULL, NULL);
   }while(1);
