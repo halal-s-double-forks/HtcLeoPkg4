@@ -156,7 +156,7 @@ VOID EFIAPI WantsCharging(
   if (CheckUsbStatus())
   { //todo add battery percentage check somelike battery < 80 % && usbStatus should ensure we wont overcharge
     voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
-    DEBUG((EFI_D_ERROR, "ChargingApp: Battery Voltage is: %d\n", voltage));
+    DEBUG((EFI_D_INFO, "ChargingApp: Battery Voltage is: %d\n", voltage));
 
     if(voltage < default_chg_voltage_threshold[VOLTAGE_4000]) {
       DEBUG((EFI_D_INFO, "ChargingApp: Voltage < default_threshold\n"));
@@ -180,7 +180,7 @@ VOID EFIAPI WantsCharging(
     }
     else {
       // Battery is full
-      DEBUG((EFI_D_ERROR, "ChargingApp: Voltage >= default_threshold\n"));
+      DEBUG((EFI_D_INFO, "ChargingApp: Voltage >= default_threshold\n"));
       // Set charger state to CHG_OFF_FULL_BAT
       if (gState != CHG_OFF_FULL_BAT ) {
         MmioWrite32(USB_USBCMD, 0x00080001);
@@ -253,6 +253,8 @@ ChargingDxeInit(
   ASSERT_EFI_ERROR(Status);
 
   // Register for an ExitBootServicesEvent
+  DEBUG((EFI_D_ERROR, "ChargingDxe: Register for an ExitBootServicesEvent"));
+  MicroSecondDelay(1000000);
   Status = gBS->CreateEvent(EVT_SIGNAL_EXIT_BOOT_SERVICES, TPL_NOTIFY, ExitBootServicesEvent, NULL, &EfiExitBootServicesEvent);
   ASSERT_EFI_ERROR(Status);
 
