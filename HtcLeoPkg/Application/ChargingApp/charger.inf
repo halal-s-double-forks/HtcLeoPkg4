@@ -1,8 +1,8 @@
 [Defines] 
   INF_VERSION                    = 0x00010005
   BASE_NAME                      = charger
-  FILE_GUID                      = 7C04A583-9E3E-4f1c-AD65-E05268D0B4D1 #D7A59C0A-899E-4E31-A1C3-3D551D7A9999
-  MODULE_TYPE                    = UEFI_APPLICATION 
+  FILE_GUID                      = D7A59C0A-899E-4E31-A1C3-3D551D7A9999 #7C04A583-9E3E-4f1c-AD65-E05268D0B4D1
+  MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 0.1 
   ENTRY_POINT                    = ChargingDxeInit
 
@@ -16,7 +16,7 @@
   HtcLeoPkg/HtcLeoPkg.dec
   
 [LibraryClasses]
-  UefiApplicationEntryPoint
+  UefiDriverEntryPoint
   UefiLib
   IoLib
   UefiBootServicesTableLib 

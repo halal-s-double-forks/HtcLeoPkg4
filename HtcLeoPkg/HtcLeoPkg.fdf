@@ -139,6 +139,9 @@ APRIORI DXE {
   INF HtcLeoPkg/Drivers/HtcLeoPkgDxe/HtcLeoPkgDxe.inf
   INF HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
 
+  # Charging App
+  INF HtcLeoPkg/Application/ChargingApp/charger.inf
+
   #
   # USB Host Support
   #
@@ -195,8 +198,7 @@ APRIORI DXE {
   #
   # UEFI applications
   #
-  INF HtcLeoPkg/Application/ChargingApp/charger.inf
-  #INF ShellPkg/Application/Shell/Shell.inf
+  INF ShellPkg/Application/Shell/Shell.inf
 !ifdef $(INCLUDE_TFTP_COMMAND)
   INF ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf
 !endif #$(INCLUDE_TFTP_COMMAND)
