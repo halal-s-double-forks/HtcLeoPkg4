@@ -73,11 +73,8 @@ void ulpi_write(unsigned val, unsigned reg)
 	/* wait for completion */
 	while ((MmioRead32(USB_ULPI_VIEWPORT) & ULPI_RUN) && (--timeout));
 }
-// END
+// END HACK
 
-//toDo
-//be able to get battery voltage
-//enable charging, use LED as indicator
 static void EFIAPI SetCharger(enum PSY_CHARGER_STATE state)
 {
   gState = state;
@@ -215,6 +212,8 @@ ExitBootServicesEvent (
 {
   // Make sure charging is disabled
   SetCharger(CHG_OFF);
+  // and turn off led
+  gMicroP->LedSetMode(LED_OFF);
 }
 
 EFI_STATUS 
@@ -224,8 +223,6 @@ ChargingDxeInit(
   IN EFI_SYSTEM_TABLE *SystemTable) 
 {
   EFI_STATUS Status = EFI_SUCCESS;
-
-  DEBUG((EFI_D_ERROR, "ChargingApp: Init()\n"));
 
   // Find the gpio controller protocol.  ASSERT if not found.
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
