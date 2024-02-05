@@ -31,8 +31,10 @@
 #include <Library/hsusb.h>
 
 #include <Device/Gpio.h>
+#include <Device/microp.h>
 
 #include <Protocol/GpioTlmm.h>
+#include <Protocol/HtcLeoMicroP.h>
 
 #define USB_STATUS        0xef20c
 
@@ -48,6 +50,7 @@ EFI_EVENT EfiExitBootServicesEvent      = (EFI_EVENT)NULL;
 
 // Cached copy of the Hardware Gpio protocol instance
 TLMM_GPIO *gGpio = NULL;
+HTCLEO_MICROP_PROTOCOL *gMicroP = NULL;
 
 enum PSY_CHARGER_STATE {
 	CHG_OFF,
@@ -150,16 +153,16 @@ VOID EFIAPI WantsCharging(
     IN EFI_EVENT Event, 
     IN VOID *Context)
 {
-  BOOLEAN usbStatus = CheckUsbStatus();
   UINT32 voltage = 0;
   //get battery volate here and calc to percent
   
-  if (usbStatus){ //todo add battery percentage check somelike battery < 80 % && usbStatus should ensure we wont overcharge
+  if (CheckUsbStatus())
+  { //todo add battery percentage check somelike battery < 80 % && usbStatus should ensure we wont overcharge
     voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
-    DEBUG((EFI_D_ERROR, "Battery Voltage is: %d\n", voltage));
+    DEBUG((EFI_D_ERROR, "ChargingApp: Battery Voltage is: %d\n", voltage));
 
     if(voltage < default_chg_voltage_threshold[VOLTAGE_4000]) {
-      DEBUG((EFI_D_ERROR, "Voltage < default_threshold\n"));
+      DEBUG((EFI_D_INFO, "ChargingApp: Voltage < default_threshold\n"));
       // If battery needs charging, set new charger state
       if (IsAcOnline()) {
         if (gState != CHG_AC ) {
@@ -174,23 +177,24 @@ VOID EFIAPI WantsCharging(
           SetCharger(CHG_USB_LOW);
         }
       }
-      DEBUG((EFI_D_ERROR, "Charging enabled\n"));
+      DEBUG((EFI_D_INFO, "ChargingApp: Charging enabled\n"));
       // and turn on leds
+      gMicroP->LedSetMode(LED_AMBER);
     }
     else {
       // Battery is full
-      DEBUG((EFI_D_ERROR, "Voltage >= default_threshold\n"));
+      DEBUG((EFI_D_ERROR, "ChargingApp: Voltage >= default_threshold\n"));
       // Set charger state to CHG_OFF_FULL_BAT
       if (gState != CHG_OFF_FULL_BAT ) {
         MmioWrite32(USB_USBCMD, 0x00080001);
         MicroSecondDelay(10);
         SetCharger(CHG_OFF_FULL_BAT);
       }
-      // and turn off led
+      // and turn LED green
+      gMicroP->LedSetMode(LED_GREEN);
     }
   }
   else {
-    DEBUG((EFI_D_ERROR, "USB not connected!\n"));
     // Set charger state to CHG_OFF
     if (gState != CHG_OFF ) {
       MmioWrite32(USB_USBCMD, 0x00080001);
@@ -198,6 +202,7 @@ VOID EFIAPI WantsCharging(
       SetCharger(CHG_OFF);
     }
     // and turn off led
+    gMicroP->LedSetMode(LED_OFF);
   }
 }
 
@@ -224,6 +229,10 @@ ChargingDxeInit(
 
   // Find the gpio controller protocol.  ASSERT if not found.
   Status = gBS->LocateProtocol (&gTlmmGpioProtocolGuid, NULL, (VOID **)&gGpio);
+  ASSERT_EFI_ERROR (Status);
+
+  // Find the MicroP protocol.  ASSERT if not found.
+  Status = gBS->LocateProtocol (&gHtcLeoMicropProtocolGuid, NULL, (VOID **)&gMicroP);
   ASSERT_EFI_ERROR (Status);
 
   // HACK : Loop for testing

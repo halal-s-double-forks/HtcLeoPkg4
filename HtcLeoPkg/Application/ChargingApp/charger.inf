@@ -27,6 +27,7 @@
   DS2746Lib
 
 [Protocols]
+  gHtcLeoMicropProtocolGuid
   gTlmmGpioProtocolGuid
 
 [Depex]
