@@ -232,23 +232,24 @@ ChargingDxeInit(
   Status = gBS->LocateProtocol (&gHtcLeoMicropProtocolGuid, NULL, (VOID **)&gMicroP);
   ASSERT_EFI_ERROR (Status);
 
-  // HACK : Loop for testing
-  do {
-    WantsCharging(NULL, NULL);
-  }while(1);
-
-  // Install a timer to check for want charging every 3 seconds
-  Status = gBS->CreateEvent(
-      EVT_NOTIFY_SIGNAL | EVT_TIMER,
-      TPL_CALLBACK, WantsCharging, NULL,
-      &m_CallbackTimer
-  );
+  // Install a timer to check for want charging every 100ms
+  Status = gBS->CreateEvent (
+                EVT_TIMER | EVT_NOTIFY_SIGNAL,  // Type
+                TPL_NOTIFY,                     // NotifyTpl
+                WantsCharging,                  // NotifyFunction
+                NULL,                           // NotifyContext
+                &m_CallbackTimer                // Event
+                );
   ASSERT_EFI_ERROR(Status);
 
-  Status = gBS->SetTimer(
-      m_CallbackTimer, TimerPeriodic,
-      EFI_TIMER_PERIOD_MILLISECONDS(3000)
-  );
+  //
+  // Program the timer event to be signaled every 100 ms.
+  //
+  Status = gBS->SetTimer (
+                m_CallbackTimer,
+                TimerPeriodic,
+                EFI_TIMER_PERIOD_MILLISECONDS (100)
+                );
   ASSERT_EFI_ERROR(Status);
 
   // Register for an ExitBootServicesEvent
