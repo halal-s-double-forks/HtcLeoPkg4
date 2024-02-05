@@ -62,8 +62,8 @@ enum PSY_CHARGER_STATE {
 
 enum PSY_CHARGER_STATE gState = CHG_OFF;
 
-// HACK
-void ulpi_write(unsigned val, unsigned reg)
+// TODO: Remove this function, make use of the USB protocol instead
+void UlpiWrite(unsigned val, unsigned reg)
 {
 	unsigned timeout = 10000;
 	
@@ -73,7 +73,6 @@ void ulpi_write(unsigned val, unsigned reg)
 	/* wait for completion */
 	while ((MmioRead32(USB_ULPI_VIEWPORT) & ULPI_RUN) && (--timeout));
 }
-// END HACK
 
 static void EFIAPI SetCharger(enum PSY_CHARGER_STATE state)
 {
@@ -91,7 +90,7 @@ static void EFIAPI SetCharger(enum PSY_CHARGER_STATE state)
 			gGpio->Set(HTCLEO_GPIO_BATTERY_CHARGER_ENABLE, 0);
 			gGpio->Config(HTCLEO_GPIO_BATTERY_CHARGER_ENABLE, GPIO_OUTPUT);
 			break;
-		case CHG_OFF_FULL_BAT: // zzz
+		case CHG_OFF_FULL_BAT:
 		case CHG_OFF:
 		default:	
 			// 0 enable; 1 disable;
@@ -151,10 +150,9 @@ VOID EFIAPI WantsCharging(
     IN VOID *Context)
 {
   UINT32 voltage = 0;
-  //get battery volate here and calc to percent
   
   if (CheckUsbStatus())
-  { //todo add battery percentage check somelike battery < 80 % && usbStatus should ensure we wont overcharge
+  {
     voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
     DEBUG((EFI_D_INFO, "ChargingApp: Battery Voltage is: %d\n", voltage));
 
@@ -164,7 +162,7 @@ VOID EFIAPI WantsCharging(
       if (IsAcOnline()) {
         if (gState != CHG_AC ) {
           MmioWrite32(USB_USBCMD, 0x00080000);
-          ulpi_write(0x48, 0x04);
+          UlpiWrite(0x48, 0x04);
           SetCharger(CHG_AC);
         }
       } else {
@@ -175,7 +173,7 @@ VOID EFIAPI WantsCharging(
         }
       }
       DEBUG((EFI_D_INFO, "ChargingApp: Charging enabled\n"));
-      // and turn on leds
+      // and turn LED amber
       gMicroP->LedSetMode(LED_AMBER);
     }
     else {
@@ -253,8 +251,6 @@ ChargingDxeInit(
   ASSERT_EFI_ERROR(Status);
 
   // Register for an ExitBootServicesEvent
-  DEBUG((EFI_D_ERROR, "ChargingDxe: Register for an ExitBootServicesEvent"));
-  MicroSecondDelay(1000000);
   Status = gBS->CreateEvent(EVT_SIGNAL_EXIT_BOOT_SERVICES, TPL_NOTIFY, ExitBootServicesEvent, NULL, &EfiExitBootServicesEvent);
   ASSERT_EFI_ERROR(Status);
 
