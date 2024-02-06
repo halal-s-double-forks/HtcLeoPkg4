@@ -33,16 +33,11 @@
 
 #include <Protocol/EmbeddedClock.h>
 
-static UINTN ClocksLookup[NR_CLKS];
+static UINTN ClocksLookup[NR_CLKS] = {-1};
 
 VOID
 FillClocksLookup()
 {
-  // Fill struct with default values
-  for (UINTN i = 0; i < NR_CLKS; i++) {
-    ClocksLookup[i] = -1;
-  }
-
   // Fill used clocks
   ClocksLookup[ICODEC_RX_CLK] = 50;
   ClocksLookup[ICODEC_TX_CLK] = 52;
@@ -64,7 +59,6 @@ FillClocksLookup()
   ClocksLookup[SDC1_PCLK] = 17;
   ClocksLookup[SDC2_PCLK] = 16;
 }
-
 
 // Cotullaz "new" clock functions
 UINTN
