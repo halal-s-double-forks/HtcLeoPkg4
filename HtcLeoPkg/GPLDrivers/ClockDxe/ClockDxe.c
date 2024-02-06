@@ -27,13 +27,51 @@
 #include <Library/BaseMemoryLib.h>
 #include <Library/pcom.h>
 #include <Library/acpuclock.h>
+#include <Library/reg.h>
 
 #include <Chipset/iomap.h>
 #include <Chipset/clock.h>
 
 #include <Protocol/EmbeddedClock.h>
 
+#define TCX0               19200000
+#define GLBL_CLK_ENA_2     ((UINT32)MSM_CLK_CTL_BASE + 0x220)
+#define PLLn_BASE(n)       (MSM_CLK_CTL_BASE + 0x300 + 32 * (n))
+#define PLL_FREQ(l, m, n)  (TCX0 * (l) + TCX0 * (m) / (n))
+
+#define MSM_CLOCK_REG(frequency,M,N,D,PRE,a5,SRC,MNE,pll_frequency) { \
+	.freq = (frequency), \
+	.md = ((0xffff & (M)) << 16) | (0xffff & ~((D) << 1)), \
+	.ns = ((0xffff & ~((N) - (M))) << 16) \
+	    | ((0xff & (0xa | (MNE))) << 8) \
+	    | ((0x7 & (a5)) << 5) \
+	    | ((0x3 & (PRE)) << 3) \
+	    | (0x7 & (SRC)), \
+	.pll_freq = (pll_frequency), \
+	.calc_freq = 1000*((pll_frequency/1000)*M/((PRE+1)*N)), \
+}
+
 static UINTN ClocksLookup[NR_CLKS] = {-1};
+
+struct mdns_clock_params
+{
+	unsigned freq;
+	UINT32 calc_freq;
+	UINT32 md;
+	UINT32 ns;
+	UINT32 pll_freq;
+	UINT32 clk_id;
+};
+
+struct msm_clock_params
+{
+	unsigned clk_id;
+	UINT32   glbl;
+	unsigned idx;
+	unsigned offset;
+	unsigned ns_only;
+	char	 *name;
+};
 
 VOID
 FillClocksLookup()
@@ -207,16 +245,96 @@ CotullaClkSetRate(UINT32 Id, UINTN Rate)
     return 0;
 }
 
+static struct msm_clock_params msm_clock_parameters[] = {
+	/* clk_id 					 glbl 					 idx 		 offset 			 ns_only 			 name  			*/
+	{ .clk_id = SDC1_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  7,	.offset = 0x0a4,						.name="SDC1_CLK"	},
+	{ .clk_id = SDC2_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  8, 	.offset = 0x0ac, 						.name="SDC2_CLK"	},
+	{ .clk_id = SDC3_CLK,		.glbl = GLBL_CLK_ENA, 	.idx = 27, 	.offset = 0x3d8,						.name="SDC3_CLK"	},
+	{ .clk_id = SDC4_CLK,		.glbl = GLBL_CLK_ENA, 	.idx = 28, 	.offset = 0x3e0,						.name="SDC4_CLK"	},
+	{ .clk_id = UART1DM_CLK,	.glbl = GLBL_CLK_ENA, 	.idx = 17, 	.offset = 0x124,						.name="UART1DM_CLK"	},
+	{ .clk_id = UART2DM_CLK,	.glbl = GLBL_CLK_ENA, 	.idx = 26, 	.offset = 0x12c,						.name="UART2DM_CLK"	},
+	{ .clk_id = USB_HS_CLK,		.glbl = GLBL_CLK_ENA_2,	.idx =  7, 	.offset = 0x3e8,	.ns_only = 0xb41, 	.name="USB_HS_CLK"	},
+	{ .clk_id = GRP_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  3, 	.offset = 0x084, 	.ns_only = 0xa80, 	.name="GRP_CLK"		}, 
+	{ .clk_id = IMEM_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  3, 	.offset = 0x084, 	.ns_only = 0xa80, 	.name="IMEM_CLK"	},
+	{ .clk_id = VFE_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  2, 	.offset = 0x040, 						.name="VFE_CLK"		},
+	{ .clk_id = MDP_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  9, 											.name="MDP_CLK"		},
+	{ .clk_id = GP_CLK,			.glbl = GLBL_CLK_ENA, 				.offset = 0x058, 	.ns_only = 0x800, 	.name="GP_CLK"		},
+	{ .clk_id = PMDH_CLK,		.glbl = GLBL_CLK_ENA_2, .idx =  4, 	.offset = 0x08c, 	.ns_only = 0x00c, 	.name="PMDH_CLK"	},
+	{ .clk_id = I2C_CLK,											.offset = 0x064, 	.ns_only = 0xa00, 	.name="I2C_CLK"		},
+	{ .clk_id = SPI_CLK,		.glbl = GLBL_CLK_ENA_2, .idx = 13, 	.offset = 0x14c, 	.ns_only = 0xa08, 	.name="SPI_CLK"		}
+};
+
+struct mdns_clock_params msm_clock_freq_parameters[] = {
+	MSM_CLOCK_REG(  144000,   3, 0x64, 0x32, 3, 3, 0, 1, 19200000),  /* SD, 144kHz */
+	MSM_CLOCK_REG(  400000,   1, 0x30, 0x15, 0, 3, 0, 1, 19200000),  /* SD, 400kHz */
+	MSM_CLOCK_REG( 7372800,   3, 0x64, 0x32, 0, 2, 4, 1, 245760000), /* 460800*16, will be divided by 4 for 115200 */
+	MSM_CLOCK_REG(12000000,   1, 0x20, 0x10, 1, 3, 1, 1, 768000000), /* SD, 12MHz */
+	MSM_CLOCK_REG(14745600,   3, 0x32, 0x19, 0, 2, 4, 1, 245760000), /* BT, 921600 (*16)*/
+	MSM_CLOCK_REG(19200000,   1, 0x0a, 0x05, 3, 3, 1, 1, 768000000), /* SD, 19.2MHz */
+	MSM_CLOCK_REG(24000000,   1, 0x10, 0x08, 1, 3, 1, 1, 768000000), /* SD, 24MHz */
+	MSM_CLOCK_REG(24576000,   1, 0x0a, 0x05, 0, 2, 4, 1, 245760000), /* SD, 24,576000MHz */
+	MSM_CLOCK_REG(25000000,  14, 0xd7, 0x6b, 1, 3, 1, 1, 768000000), /* SD, 25MHz */
+	MSM_CLOCK_REG(32000000,   1, 0x0c, 0x06, 1, 3, 1, 1, 768000000), /* SD, 32MHz */
+	MSM_CLOCK_REG(48000000,   1, 0x08, 0x04, 1, 3, 1, 1, 768000000), /* SD, 48MHz */
+	MSM_CLOCK_REG(50000000,  25, 0xc0, 0x60, 1, 3, 1, 1, 768000000), /* SD, 50MHz */
+	MSM_CLOCK_REG(58982400,   6, 0x19, 0x0c, 0, 2, 4, 1, 245760000), /* BT, 3686400 (*16) */
+	MSM_CLOCK_REG(64000000,0x19, 0x60, 0x30, 0, 2, 4, 1, 245760000), /* BT, 4000000 (*16) */
+};
+
+static inline struct msm_clock_params msm_clk_get_params(UINT32 id)
+{
+	struct msm_clock_params empty = { .clk_id = 0xdeadbeef, .glbl = 0, .idx = 0, .offset = 0, .ns_only = 0, .name="deafbeef"};
+	for (UINT32 i = 0; i < ARRAY_SIZE(msm_clock_parameters); i++) {
+		if (id == msm_clock_parameters[i].clk_id) {
+			return msm_clock_parameters[i];
+		}
+	}
+	
+	return empty;
+}
+
+static inline unsigned msm_clk_reg_offset(UINT32 id)
+{
+	struct msm_clock_params params;
+	params = msm_clk_get_params(id);
+	
+	return params.offset;
+}
+
+static unsigned long get_mdns_host_clock(UINT32 id)
+{
+	UINT32 n;
+	UINT32 offset;
+	UINT32 mdreg;
+	UINT32 nsreg;
+	unsigned long freq = 0;
+
+	offset = msm_clk_reg_offset(id);
+	if (offset == 0)
+		return -1;
+
+	mdreg = MmioRead32(MSM_CLK_CTL_BASE + offset - 4);
+	nsreg = MmioRead32(MSM_CLK_CTL_BASE + offset);
+
+	for (n = 0; n < ARRAY_SIZE(msm_clock_freq_parameters); n++) {
+		if (msm_clock_freq_parameters[n].md == mdreg &&
+			msm_clock_freq_parameters[n].ns == nsreg) {
+			freq = msm_clock_freq_parameters[n].freq;
+			break;
+		}
+	}
+
+	return freq;
+}
+
 /* note: used in lcdc */
 EFI_STATUS
 ClkSetRate(UINTN Id, UINTN Freq)
 {
 	UINT32 Retval = 0;
   	Retval = CotullaClkSetRate(Id, Freq);
-	if (Retval != -1)
-		return Retval;
-		
-	return -1;
+
+	return Retval;
 }
 
 UINTN
@@ -225,20 +343,33 @@ ClkGetRate(UINT32 Id)
 	UINTN Rate = 0;
 
 	if (ClocksLookup[Id] != -1) {
+		// Cotullas function
 		msm_proc_comm(PCOM_CLK_REGIME_SEC_MSM_GET_CLK_FREQ_KHZ, &ClocksLookup[Id], &Rate);
-		return Rate;
 	}
-	else {
+	if (Rate == 0)
+	{
 		switch(Id) {
-		/*case USB_OTG_CLK:
-					Rate = get_mdns_host_clock(Id);
-					break;*/
-		case SDC4_PCLK:
-			/* Hardcoded rate */
-			Rate = 64000000;
-			break;
-		default:
-			Rate = -1;
+			case SDC1_CLK:
+			case SDC2_CLK:
+			case SDC3_CLK:
+			case SDC4_CLK:
+			case UART1DM_CLK:
+			case UART2DM_CLK:
+			case USB_HS_CLK:
+			case SDAC_CLK:
+			case TV_DAC_CLK:
+			case TV_ENC_CLK:
+			case USB_OTG_CLK:
+				Rate = get_mdns_host_clock(Id);
+				break;
+			case SDC1_PCLK:
+			case SDC2_PCLK:
+			case SDC3_PCLK:
+			case SDC4_PCLK:
+				Rate = 64000000;
+				break;
+			default:
+				Rate = 0;
 		}
 	}
 	return Rate;
