@@ -308,7 +308,7 @@ SdCardInitialize(
     if (!gGpio->Get(HTCLEO_GPIO_SD_STATUS))
     {
         // Enable the SDC2 clock
-        gClock->ClkEnable(SDC2_CLK);
+        gClock->Enable(SDC2_CLK);
 
         // Enable SD
         mmc_legacy_init(0);

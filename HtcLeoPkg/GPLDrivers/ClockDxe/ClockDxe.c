@@ -327,24 +327,70 @@ static unsigned long get_mdns_host_clock(UINT32 id)
 	return freq;
 }
 
+static int set_mdns_host_clock(UINT32 id, unsigned long freq)
+{
+	int n;
+	unsigned offset;
+	struct msm_clock_params params;
+	UINT32 nsreg;
+	int retval = -1;
+	
+	params = msm_clk_get_params(id);
+	offset = params.offset;
+
+	if (!params.offset)
+		return -1;
+
+	// Turn off clock-enable bit if supported
+	if (params.idx > 0 && params.glbl > 0)
+		MmioWrite32(params.glbl, MmioRead32(params.glbl) & ~(1U << params.idx));
+
+	if (params.ns_only > 0)	{
+		nsreg = MmioRead32(MSM_CLK_CTL_BASE + offset) & 0xfffff000;
+		MmioWrite32(MSM_CLK_CTL_BASE + offset, nsreg | params.ns_only);
+		retval = 0;
+	} else {
+		for (n = ARRAY_SIZE(msm_clock_freq_parameters)-1; n >= 0; n--) {
+			if (freq >= msm_clock_freq_parameters[n].freq) {
+				// This clock requires MD and NS regs to set frequency:
+				MmioWrite32(MSM_CLK_CTL_BASE + offset - 4, msm_clock_freq_parameters[n].md);
+				MmioWrite32(MSM_CLK_CTL_BASE + offset, msm_clock_freq_parameters[n].ns);
+				retval = 0;
+				break;
+			}
+		}
+	}
+
+	// Turn clock-enable bit back on, if supported
+	if (params.idx > 0 && params.glbl > 0)
+		MmioWrite32(params.glbl, MmioRead32(params.glbl) | (1U << params.idx));
+
+    return retval;
+}
+
 /* note: used in lcdc */
 EFI_STATUS
 ClkSetRate(UINTN Id, UINTN Freq)
 {
-	UINT32 Retval = 0;
-  	Retval = CotullaClkSetRate(Id, Freq);
-
+	int Retval = 0;
+    Retval = CotullaClkSetRate(Id, Freq);
+	if (Retval != -1)
+		return Retval;
+		
+	Retval = set_mdns_host_clock(Id, Freq);
+		
 	return Retval;
 }
 
 UINTN
-ClkGetRate(UINT32 Id)
+ClkGetRate(UINTN Id)
 {
 	UINTN Rate = 0;
 
 	if (ClocksLookup[Id] != -1) {
 		// Cotullas function
 		msm_proc_comm(PCOM_CLK_REGIME_SEC_MSM_GET_CLK_FREQ_KHZ, &ClocksLookup[Id], &Rate);
+		//return (ClocksLookup[Id] * 100);
 	}
 	if (Rate == 0)
 	{
@@ -406,6 +452,7 @@ EMBEDDED_CLOCK_PROTOCOL  gClock = {
   ClkEnable,
   ClkDisable,
   ClkSetRate,
+  ClkGetRate,
 };
 
 EFI_STATUS

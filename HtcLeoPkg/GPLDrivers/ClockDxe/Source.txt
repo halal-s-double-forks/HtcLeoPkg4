@@ -1,0 +1,2 @@
+https://github.com/n0d3/lk/blob/BlackCLK_ex_2/target/htcleo/clock.c
+https://github.com/n0d3/lk/blob/BlackCLK_ex_2/target/htcleo/acpuclock.c

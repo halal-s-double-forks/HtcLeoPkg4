@@ -347,7 +347,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 {
 	int ret, ret_wait;
 
-	gClock->ClkEnable(dev.pdata->clk_nr);
+	gClock->Enable(dev.pdata->clk_nr);
 	gInterrupt->EnableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 
 	ret = msm_i2c_poll_notbusy(1);
@@ -416,7 +416,7 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	} */
 err:
 	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
-	gClock->ClkDisable(dev.pdata->clk_nr);
+	gClock->Disable(dev.pdata->clk_nr);
 	
 	return ret;
 }
@@ -486,7 +486,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	
 	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
 	dev.pdata->set_mux_to_i2c(0);
-	gClock->ClkEnable(dev.pdata->clk_nr);
+	gClock->Enable(dev.pdata->clk_nr);
 	
 	int i2c_clk 	= 19200000;
 	int target_clk 	= 100000;
@@ -502,7 +502,7 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 
-	gClock->ClkDisable(dev.pdata->clk_nr);
+	gClock->Disable(dev.pdata->clk_nr);
 	gInterrupt->RegisterInterruptSource(gInterrupt, dev.pdata->irq_nr, I2CInterruptHandler);
 
 	return 0;
@@ -515,7 +515,7 @@ void msm_i2c_remove() {
 	}
 
 	gInterrupt->DisableInterruptSource(gInterrupt, dev.pdata->irq_nr);
-	gClock->ClkDisable(dev.pdata->clk_nr);
+	gClock->Disable(dev.pdata->clk_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	dev.pdata = NULL;
 }
