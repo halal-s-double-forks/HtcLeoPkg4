@@ -208,10 +208,14 @@ ExitBootServicesEvent (
   IN VOID       *Context
   )
 {
-  // Make sure charging is disabled
-  SetCharger(CHG_OFF);
-  // and turn off led
-  gMicroP->LedSetMode(LED_OFF);
+  // Set charger state to CHG_OFF
+    if (gState != CHG_OFF ) {
+      MmioWrite32(USB_USBCMD, 0x00080001);
+      MicroSecondDelay(10);
+      SetCharger(CHG_OFF);
+    }
+    // and turn off led
+    gMicroP->LedSetMode(LED_OFF);
 }
 
 EFI_STATUS 
