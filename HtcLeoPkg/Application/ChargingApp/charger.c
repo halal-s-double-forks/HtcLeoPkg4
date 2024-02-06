@@ -156,7 +156,7 @@ VOID EFIAPI WantsCharging(
     voltage = ds2746_voltage(DS2746_I2C_SLAVE_ADDR);
     DEBUG((EFI_D_INFO, "ChargingApp: Battery Voltage is: %d\n", voltage));
 
-    if(voltage < default_chg_voltage_threshold[VOLTAGE_4000]) {
+    if(voltage < default_chg_voltage_threshold[VOLTAGE_4100]) {
       DEBUG((EFI_D_INFO, "ChargingApp: Voltage < default_threshold\n"));
       // If battery needs charging, set new charger state
       if (IsAcOnline()) {
