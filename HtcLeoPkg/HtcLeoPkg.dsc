@@ -124,9 +124,9 @@
   # Memory protection
   gEfiMdeModulePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x00000000
 
-  # System Memory (576MB)
-  gArmTokenSpaceGuid.PcdSystemMemoryBase|0x11800000
-  gArmTokenSpaceGuid.PcdSystemMemorySize|0x1E800000
+  # System Memory (512MB)
+  gArmTokenSpaceGuid.PcdSystemMemoryBase|0x20000000
+  gArmTokenSpaceGuid.PcdSystemMemorySize|0x1B700000
   gArmPlatformTokenSpaceGuid.PcdSystemMemoryUefiRegionSize|0x01000000
 
   # We boot all processors here!!!!!
@@ -141,8 +141,8 @@
 
   gEmbeddedTokenSpaceGuid.PcdMetronomeTickPeriod|1000
 
-  gHtcLeoPkgTokenSpaceGuid.PcdSerialRegisterBase|0x02020000   # UART1
-  gHtcLeoPkgTokenSpaceGuid.PcdKdUartInstance|1  
+  gHtcLeoPkgTokenSpaceGuid.PcdSerialRegisterBase|0xA9A00000   # UART1 Base from iomap_qsd8k.h
+  gHtcLeoPkgTokenSpaceGuid.PcdKdUartInstance|1  	      # UART1
 
   #
   #
@@ -156,7 +156,7 @@
   #
   gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvModeEnable|TRUE
 
-  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x02A00000
+  gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferAddress|0x03B00000
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth|480
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight|800
 
@@ -230,7 +230,7 @@
   HtcLeoPkg/Drivers/SmemDxe/SmemDxe.inf
   HtcLeoPkg/Drivers/SmemPtableDxe/SmemPtableDxe.inf
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
-  HtcLeoPkg/GPLDrivers/SdCardDxe/SdCardDxe.inf
+  # HtcLeoPkg/GPLDrivers/SdCardDxe/SdCardDxe.inf
   HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
   HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
   HtcLeoPkg/GPLDrivers/I2CDxe/I2CDxe.inf
