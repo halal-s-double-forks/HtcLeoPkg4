@@ -26,7 +26,7 @@
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = HtcLeoPkg/HtcLeoPkg.fdf
 
-  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = 0
+  DEFINE USE_SCREEN_FOR_SERIAL_OUTPUT = 1
 
 !include HtcLeoPkg/CommonDsc.dsc.inc
 
@@ -90,7 +90,7 @@
   SmemLib|HtcLeoPkg/Drivers/SmemDxe/SmemImplLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
-  DS2746Lib|HtcLeoPkg/Library/DS2746Lib/DS2746.inf
+  # DS2746Lib|HtcLeoPkg/Library/DS2746Lib/DS2746.inf # gutted :(
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
@@ -124,9 +124,9 @@
   # Memory protection
   gEfiMdeModulePkgTokenSpaceGuid.PcdImageProtectionPolicy|0x00000000
 
-  # System Memory (512MB)
+  # System Memory (576MB)
   gArmTokenSpaceGuid.PcdSystemMemoryBase|0x20000000
-  gArmTokenSpaceGuid.PcdSystemMemorySize|0x1B700000
+  gArmTokenSpaceGuid.PcdSystemMemorySize|0x1E800000
   gArmPlatformTokenSpaceGuid.PcdSystemMemoryUefiRegionSize|0x01000000
 
   # We boot all processors here!!!!!
@@ -272,7 +272,7 @@
   HtcLeoPkg/Application/TetrisApp/tetris.inf
 
   # Charging
-  HtcLeoPkg/Application/ChargingApp/charger.inf
+  # HtcLeoPkg/Application/ChargingApp/charger.inf
 
   #
   # FAT filesystem + GPT/MBR partitioning

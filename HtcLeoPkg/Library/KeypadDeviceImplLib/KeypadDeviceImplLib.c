@@ -11,8 +11,14 @@
 
 #include <Device/Gpio.h>
 
+#include <Device/microp.h>
+#include <Protocol/HtcLeoMicroP.h>
+
 // Cached copy of the Hardware Gpio protocol instance
 TLMM_GPIO *gGpio = NULL;
+
+// Cached copy of the MicroP protocol instance
+HTCLEO_MICROP_PROTOCOL *gMicroP = NULL;
 
 // Global variables
 EFI_EVENT m_CallbackTimer = NULL;
@@ -99,7 +105,7 @@ ExitBootServicesEvent (
   )
 {
   // Make sure the LED is disabled
-  gGpio->Set(HTCLEO_GPIO_KP_LED, 0);
+  gMicroP->KpLedSetBrightness(0);
 }
 
 RETURN_STATUS
@@ -191,6 +197,13 @@ KeypadDeviceImplConstructor(VOID)
 
 EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
 {
+    EFI_STATUS Status;
+
+  // Find the MicroP protocol. ASSERT if not found.
+  Status = gBS->LocateProtocol(&gHtcLeoMicropProtocolGuid, NULL, (VOID **)&gMicroP);
+
+  ASSERT_EFI_ERROR(Status);
+
   LibKeyInitializeKeyContext(&KeyContextPower.EfiKeyContext);
   KeyContextPower.EfiKeyContext.KeyData.Key.ScanCode = SCAN_ESC;
 
@@ -215,15 +228,15 @@ EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
   return EFI_SUCCESS;
 }
 
-// Callback function to disable the GPIO after a certain time
+// Callback function to turn off the LED after a certain time
 VOID EFIAPI DisableKeyPadLed(IN EFI_EVENT Event, IN VOID *Context)
 {
-    // Disable the GPIO
-    gGpio->Set(HTCLEO_GPIO_KP_LED, 0);
+    // Set the Keypad LED Brightness to 0
+    gMicroP->KpLedSetBrightness(0);
     timerRunning = FALSE;
 }
 
-// Function to enable the GPIO and schedule the callback
+// Function to enable the LED and schedule the callback
 VOID EnableKeypadLedWithTimer(VOID)
 {
     if (timerRunning) {
@@ -232,7 +245,7 @@ VOID EnableKeypadLedWithTimer(VOID)
         timerRunning = FALSE;
     }
 
-    gGpio->Set(HTCLEO_GPIO_KP_LED, 1);
+    gMicroP->KpLedSetBrightness(255);
     EFI_STATUS Status;
 
     Status = gBS->CreateEvent(

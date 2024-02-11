@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "keypaddevice.h": "c",
+        "cstdlib": "c"
+    }
+}
